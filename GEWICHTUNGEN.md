@@ -20,6 +20,7 @@ Die finale Gewichtung errechnet sich durch: `Gruppengewichtung × Kategoriengewi
 | 1.0 | **Neutral** | Standard-Gewichtung (Baseline) |
 | 0.9 | **Nebensächlich** | Weniger wichtige, aber noch relevante Faktoren |
 | 0.8 | **Unwichtig** | Faktoren mit geringster Priorität |
+| 0.0 | **Deaktiviert** | Kategorie wird komplett von der Bewertung ausgeschlossen |
 
 ## Standard-Gewichtungen der Kategorien-Gruppen
 
@@ -42,7 +43,7 @@ Freizeitangebote verbessern die Lebensqualität, sind aber nicht lebensnotwendig
 - **Kultur** (0.8 - Unwichtig): Museen, Theater, Bibliotheken
 - **Sport** (1.0 - Neutral): Fitnessstudios, Schwimmbäder, Sportanlagen
 - **Parks** (1.1 - Wichtig): Grünflächen für Erholung und Luftqualität
-- **Restaurants** (0.7 - Unwichtig): Gastronomie und kulinarische Vielfalt
+- **Restaurants** (0.8 - Unwichtig): Gastronomie und kulinarische Vielfalt
 
 ### 🚌 Nahverkehr (Gewichtung: 1.0 - Neutral)
 Öffentliche Verkehrsmittel sind wichtig für Mobilität ohne Auto.
@@ -58,6 +59,8 @@ Täglich benötigte Services und Einrichtungen.
 - **Sicherheit** (1.1 - Wichtig): Polizei und Feuerwehr
 - **Services** (0.7 - Unwichtig): Post, Tankstellen
 - **Friseur** (0.8 - Unwichtig): Persönliche Dienstleistungen
+
+> **Hinweis**: Kategorien können mit Gewichtung 0.0 komplett deaktiviert werden.
 
 ## Besondere Faktoren
 
@@ -84,7 +87,8 @@ Verkehr-Penalty = (10 - Verkehrswert) × 0.1
 ### Auswirkungen von Gewichtungsänderungen
 - **Höhere Gewichtung** (1.1-1.2): Faktoren werden stärker in die Gesamtbewertung einbezogen
 - **Niedrigere Gewichtung** (0.8-0.9): Faktoren haben weniger Einfluss auf die Gesamtbewertung
-- **Deaktivierung**: Kategorien werden komplett von der Bewertung ausgeschlossen
+- **Gewichtung 0.0**: Kategorien werden komplett von der Bewertung ausgeschlossen
+- **Checkbox deaktiviert**: Kategorien werden temporär ausgeschlossen (können wieder aktiviert werden)
 
 ## Beispiel-Berechnung
 

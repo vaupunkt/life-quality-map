@@ -484,6 +484,7 @@ export default function Home() {
 
   // Gewichtungslabels und -werte
   const getWeightLabel = (weight: number) => {
+    if (weight === 0.0) return 'deaktiviert'
     if (weight >= 1.2) return 'sehr wichtig'
     if (weight >= 1.1) return 'wichtig'
     if (weight >= 1.0) return 'neutral'
@@ -496,7 +497,8 @@ export default function Home() {
     { value: 1.1, label: 'wichtig' },
     { value: 1.0, label: 'neutral' },
     { value: 0.9, label: 'nebensächlich' },
-    { value: 0.8, label: 'unwichtig' }
+    { value: 0.8, label: 'unwichtig' },
+    { value: 0.0, label: 'deaktiviert' }
   ]
 
   // Funktion für farbige Bewertungen basierend auf Score
@@ -528,6 +530,10 @@ export default function Home() {
         if (!category.enabled || !categoryVisibility[category.key]) return
         
         const categoryWeight = category.weight || 1.0
+        
+        // Ignoriere Kategorien mit Gewichtung 0.0 (deaktiviert)
+        if (categoryWeight === 0.0) return
+        
         const finalWeight = groupWeight * categoryWeight
         
         // Hole den Score für diese Kategorie aus den vorhandenen Daten
