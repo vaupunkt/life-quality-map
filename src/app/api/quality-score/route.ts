@@ -99,7 +99,7 @@ async function calculateQualityScore(
     shopping: ['bakery', 'butcher', 'clothes', 'mall', 'department_store'],
     finance: ['bank', 'atm'],
     safety: ['police', 'fire_station'],
-    services: ['post_office', 'fuel'],
+    services: ['post_office', 'fuel', 'hairdresser'],
     education: ['university', 'college']
   }
 
@@ -186,6 +186,7 @@ async function calculateQualityScore(
         
         // Services
         nwr["amenity"~"^(post_office|fuel)$"](around:${radius},${lat},${lng});
+        nwr["shop"="hairdresser"](around:${radius},${lat},${lng});
         
         // Bildung
         nwr["amenity"~"^(university|college)$"](around:${radius},${lat},${lng});
@@ -193,7 +194,6 @@ async function calculateQualityScore(
       out center meta;
     `
 
-    console.log('Sending Overpass query for:', { lat, lng, radius })
     
     const response = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
@@ -209,7 +209,6 @@ async function calculateQualityScore(
     }
 
     const data = await response.json()
-    console.log('Overpass response elements:', data.elements?.length || 0)
     
     // Verarbeite die Ergebnisse
     data.elements?.forEach((element: any) => {
@@ -298,14 +297,17 @@ async function calculateQualityScore(
         amenityDetails.services.push({ lat: elementLat, lng: elementLng, name, type: tags.amenity })
       }
       
+      if (tags.shop === 'hairdresser') {
+        amenityCounts.services++
+        amenityDetails.services.push({ lat: elementLat, lng: elementLng, name, type: 'hairdresser' })
+      }
+      
       if (['university', 'college'].includes(tags.amenity)) {
         amenityCounts.education++
         amenityDetails.education.push({ lat: elementLat, lng: elementLng, name, type: tags.amenity })
       }
     })
 
-    console.log('Amenity counts before deduplication:', amenityCounts)
-    
     // Duplikat-Filterung anwenden
     amenityDetails.kindergartens = removeDuplicates(amenityDetails.kindergartens)
     amenityDetails.schools = removeDuplicates(amenityDetails.schools)
@@ -340,7 +342,6 @@ async function calculateQualityScore(
     amenityCounts.services = amenityDetails.services.length
     amenityCounts.education = amenityDetails.education.length
 
-    console.log('Amenity counts after deduplication:', amenityCounts)
 
     // Calculate scores (0-10 scale)
     const kindergartenScore = Math.min(10, Math.round(amenityCounts.kindergarten * 2))

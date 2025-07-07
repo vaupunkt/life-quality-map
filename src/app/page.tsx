@@ -79,9 +79,9 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   const [radiusSettings, setRadiusSettings] = useState({
-    walking: 800,     // 800m walking distance
-    cycling: 2000,    // 2km cycling distance  
-    driving: 5000,    // 5km driving distance
+    walking: 500,     // 500m walking distance
+    cycling: 1500,    // 1.5km cycling distance
+    driving: 3000,    // 3km driving distance
     activeRadius: 'walking' as 'walking' | 'cycling' | 'driving'
   })
 
@@ -147,7 +147,8 @@ export default function Home() {
         { key: 'shopping', label: 'Shopping', weight: 0.8, enabled: true },
         { key: 'finance', label: 'Banken', weight: 0.6, enabled: true },
         { key: 'safety', label: 'Sicherheit', weight: 1.1, enabled: true },
-        { key: 'services', label: 'Services', weight: 0.7, enabled: true }
+        { key: 'services', label: 'Services', weight: 0.7, enabled: true },
+        { key: 'hairdresser', label: 'Friseur', weight: 0.8, enabled: true }
       ],
       isOpen: true,
       enabled: true
@@ -156,6 +157,15 @@ export default function Home() {
 
   // State für aufgeklappte Gruppen
   const [expandedGroups, setExpandedGroups] = useState<{[key: string]: boolean}>({
+    bildung: false,
+    gesundheit: false,
+    freizeit: false,
+    nahverkehr: false,
+    alltag: false
+  })
+
+  // State für Bearbeiten-Modus der Gruppen
+  const [editingGroups, setEditingGroups] = useState<{[key: string]: boolean}>({
     bildung: false,
     gesundheit: false,
     freizeit: false,
@@ -294,12 +304,101 @@ export default function Home() {
     }
   }
 
+  const handleCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation wird von diesem Browser nicht unterstützt')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+        
+        try {
+          // Reverse geocoding to get address
+          const reverseResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`, {
+            headers: {
+              'User-Agent': 'LebensqualitaetsKarte/1.0',
+            },
+          })
+          
+          const reverseData = await reverseResponse.json()
+          const currentAddress = reverseData.display_name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+          
+          setAddress(currentAddress)
+          
+          // Calculate quality score
+          await calculateQualityScore(latitude, longitude, currentAddress)
+        } catch (err) {
+          setError('Fehler beim Laden der Daten für Ihren Standort')
+        } finally {
+          setLoading(false)
+        }
+      },
+      (error) => {
+        setLoading(false)
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setError('Standortzugriff wurde verweigert. Bitte erlauben Sie den Zugriff auf Ihren Standort.')
+            break
+          case error.POSITION_UNAVAILABLE:
+            setError('Standortinformationen sind nicht verfügbar.')
+            break
+          case error.TIMEOUT:
+            setError('Zeitüberschreitung bei der Standortabfrage.')
+            break
+          default:
+            setError('Ein unbekannter Fehler ist bei der Standortabfrage aufgetreten.')
+            break
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 Minuten Cache
+      }
+    )
+  }
+
   // Helper-Funktionen
   const toggleGroup = (groupKey: string) => {
     setExpandedGroups(prev => ({
       ...prev,
       [groupKey]: !prev[groupKey]
     }))
+  }
+
+  const toggleEditMode = (groupKey: string) => {
+    setEditingGroups(prev => ({
+      ...prev,
+      [groupKey]: !prev[groupKey]
+    }))
+  }
+
+  // Berechne die Gesamtbewertung einer Gruppe
+  const getGroupScore = (groupKey: string): number => {
+    if (!qualityScore) return 0
+    
+    const group = categoryGroups[groupKey]
+    if (!group || !group.enabled) return 0
+    
+    let totalScore = 0
+    let count = 0
+    
+    group.categories.forEach(category => {
+      if (category.enabled) {
+        const score = qualityScore[category.key as keyof QualityScore] as number
+        if (typeof score === 'number') {
+          totalScore += score
+          count++
+        }
+      }
+    })
+    
+    return count > 0 ? Math.round(totalScore / count) : 0
   }
 
   const toggleGroupVisibility = (groupKey: string) => {
@@ -518,23 +617,42 @@ export default function Home() {
                     : 'bg-white/80 border-gray-200 text-gray-900 placeholder-gray-400'
                 }`}
               />
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-xl hover:from-emerald-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none whitespace-nowrap"
-              >
-                {loading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Laden...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span>🔍</span>
-                    <span>Bewerten</span>
-                  </div>
-                )}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleCurrentLocation}
+                  disabled={loading}
+                  className={`px-4 py-3 rounded-xl border transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap ${
+                    darkMode 
+                      ? 'bg-slate-700/80 border-slate-600 text-gray-200 hover:bg-slate-600/80' 
+                      : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                  title="Meinen aktuellen Standort verwenden"
+                >
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-500"></div>
+                  ) : (
+                    <span className="text-lg">📍</span>
+                  )}
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-xl hover:from-emerald-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none whitespace-nowrap"
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Laden...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span>🔍</span>
+                      <span>Bewerten</span>
+                    </div>
+                  )}
+                </button>
+              </div>
             </form>
             
             {error && (
@@ -771,9 +889,16 @@ export default function Home() {
                           >
                             <span className="text-2xl">{group.icon}</span>
                             <div>
-                              <span className={`font-bold text-lg ${
-                                darkMode ? 'text-gray-200' : 'text-gray-800'
-                              }`}>{group.title}</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`font-bold text-lg ${
+                                  darkMode ? 'text-gray-200' : 'text-gray-800'
+                                }`}>{group.title}</span>
+                                {qualityScore && (
+                                  <div className={`px-2 py-1 rounded-full bg-gradient-to-r ${getScoreColor(getGroupScore(groupKey))} ${getScoreTextColor(getGroupScore(groupKey))} font-bold text-xs`}>
+                                    {getGroupScore(groupKey)}/10
+                                  </div>
+                                )}
+                              </div>
                               <div className={`text-sm ${
                                 darkMode ? 'text-gray-400' : 'text-gray-500'
                               }`}>
@@ -799,6 +924,25 @@ export default function Home() {
                       {/* Kategorien */}
                       {expandedGroups[groupKey] && (
                         <div className="p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className={`font-medium ${
+                              darkMode ? 'text-gray-200' : 'text-gray-700'
+                            }`}>Kategorien</h4>
+                            <button
+                              onClick={() => toggleEditMode(groupKey)}
+                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                editingGroups[groupKey] 
+                                  ? darkMode 
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                                    : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                                  : darkMode 
+                                    ? 'bg-slate-600 hover:bg-slate-500 text-gray-200' 
+                                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                              }`}
+                            >
+                              {editingGroups[groupKey] ? '✓ Fertig' : '✏️ Bearbeiten'}
+                            </button>
+                          </div>
                           <div className="grid grid-cols-1 gap-3">
                             {group.categories.map(category => {
                               const score = qualityScore?.[category.key as keyof QualityScore] as number
@@ -854,53 +998,58 @@ export default function Home() {
                                         {amenityCount} gefunden
                                       </div>
                                     </div>
-                                    <select
-                                      value={category.weight}
-                                      onChange={(e) => updateCategoryWeight(groupKey, category.key, parseFloat(e.target.value))}
-                                      className={`text-xs px-2 py-1 border rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${
-                                        darkMode 
-                                          ? 'bg-slate-700 border-slate-600 text-gray-200' 
-                                          : 'bg-white border-gray-300'
-                                      }`}
-                                      title="Gewichtung"
-                                    >
-                                      {weightOptions.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                          {option.label}
-                                        </option>
-                                      ))}
-                                    </select>
+                                    {/* Gewichtungsauswahl nur im Bearbeiten-Modus */}
+                                    {editingGroups[groupKey] && (
+                                      <select
+                                        value={category.weight}
+                                        onChange={(e) => updateCategoryWeight(groupKey, category.key, parseFloat(e.target.value))}
+                                        className={`text-xs px-2 py-1 border rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${
+                                          darkMode 
+                                            ? 'bg-slate-700 border-slate-600 text-gray-200' 
+                                            : 'bg-white border-gray-300'
+                                        }`}
+                                        title="Gewichtung"
+                                      >
+                                        {weightOptions.map(option => (
+                                          <option key={option.value} value={option.value}>
+                                            {option.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    )}
                                   </div>
                                 </div>
                               )
                             })}
                           </div>
                           
-                          {/* Gruppengewichtung anpassbar */}
-                          <div className={`mt-4 pt-4 border-t ${
-                            darkMode ? 'border-slate-600' : 'border-gray-200'
-                          }`}>
-                            <div className="flex items-center justify-between">
-                              <label className={`text-sm font-medium ${
-                                darkMode ? 'text-gray-300' : 'text-gray-600'
-                              }`}>Gruppengewichtung:</label>
-                              <select
-                                value={group.weight}
-                                onChange={(e) => updateGroupWeight(groupKey, parseFloat(e.target.value))}
-                                className={`text-sm px-3 py-1 border rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${
-                                  darkMode 
-                                    ? 'bg-slate-700 border-slate-600 text-gray-200' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                              >
-                                {weightOptions.map(option => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
+                          {/* Gruppengewichtung anpassbar - nur im Bearbeiten-Modus */}
+                          {editingGroups[groupKey] && (
+                            <div className={`mt-4 pt-4 border-t ${
+                              darkMode ? 'border-slate-600' : 'border-gray-200'
+                            }`}>
+                              <div className="flex items-center justify-between">
+                                <label className={`text-sm font-medium ${
+                                  darkMode ? 'text-gray-300' : 'text-gray-600'
+                                }`}>Gruppengewichtung:</label>
+                                <select
+                                  value={group.weight}
+                                  onChange={(e) => updateGroupWeight(groupKey, parseFloat(e.target.value))}
+                                  className={`text-sm px-3 py-1 border rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${
+                                    darkMode 
+                                      ? 'bg-slate-700 border-slate-600 text-gray-200' 
+                                      : 'bg-white border-gray-300'
+                                  }`}
+                                >
+                                  {weightOptions.map(option => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       )}
                     </div>
