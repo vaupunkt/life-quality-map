@@ -562,6 +562,144 @@ export default function Home() {
     }
   }
 
+  // Gewichtungspresets basierend auf Zielgruppen
+  const weightingPresets = {
+    default: {
+      name: 'Standard',
+      description: 'Ausgewogene Gewichtung für alle Nutzer',
+      icon: '⚖️',
+      groups: {
+        bildung: { weight: 1.0, categories: { kindergarten: 1.0, schools: 1.2, education: 0.8 } },
+        gesundheit: { weight: 1.1, categories: { doctors: 1.2, pharmacies: 1.0 } },
+        freizeit: { weight: 0.9, categories: { culture: 0.8, sports: 1.0, parks: 1.1, restaurants: 0.8 } },
+        nahverkehr: { weight: 1.0, categories: { transport: 1.2 } },
+        alltag: { weight: 1.0, categories: { supermarkets: 1.2, shopping: 0.8, finance: 0.8, safety: 1.1, services: 0.8, hairdresser: 0.8 } }
+      }
+    },
+    familien: {
+      name: 'Familien mit Kindern',
+      description: 'Optimiert für Familien mit schulpflichtigen Kindern',
+      icon: '👨‍👩‍👧‍👦',
+      groups: {
+        bildung: { weight: 1.2, categories: { kindergarten: 1.2, schools: 1.2, education: 0.8 } },
+        gesundheit: { weight: 1.1, categories: { doctors: 1.2, pharmacies: 1.0 } },
+        freizeit: { weight: 1.0, categories: { culture: 0.8, sports: 1.0, parks: 1.2, restaurants: 0.8 } },
+        nahverkehr: { weight: 1.0, categories: { transport: 1.1 } },
+        alltag: { weight: 1.1, categories: { supermarkets: 1.2, shopping: 0.8, finance: 0.8, safety: 1.2, services: 0.8, hairdresser: 0.8 } }
+      }
+    },
+    berufstaetige: {
+      name: 'Berufstätige ohne Kinder',
+      description: 'Fokus auf Mobilität und Freizeitangebote',
+      icon: '🧑‍💼',
+      groups: {
+        bildung: { weight: 0.8, categories: { kindergarten: 0.8, schools: 0.8, education: 0.9 } },
+        gesundheit: { weight: 1.0, categories: { doctors: 1.1, pharmacies: 1.0 } },
+        freizeit: { weight: 1.1, categories: { culture: 1.1, sports: 1.1, parks: 1.0, restaurants: 1.1 } },
+        nahverkehr: { weight: 1.2, categories: { transport: 1.2 } },
+        alltag: { weight: 1.0, categories: { supermarkets: 1.1, shopping: 1.0, finance: 0.9, safety: 1.0, services: 0.9, hairdresser: 0.9 } }
+      }
+    },
+    senioren: {
+      name: 'Senioren',
+      description: 'Schwerpunkt auf Gesundheit und Grundversorgung',
+      icon: '👴👵',
+      groups: {
+        bildung: { weight: 0.8, categories: { kindergarten: 0.8, schools: 0.8, education: 0.8 } },
+        gesundheit: { weight: 1.2, categories: { doctors: 1.2, pharmacies: 1.2 } },
+        freizeit: { weight: 1.0, categories: { culture: 1.0, sports: 0.9, parks: 1.1, restaurants: 0.9 } },
+        nahverkehr: { weight: 1.2, categories: { transport: 1.2 } },
+        alltag: { weight: 1.1, categories: { supermarkets: 1.2, shopping: 0.8, finance: 1.0, safety: 1.1, services: 1.0, hairdresser: 0.9 } }
+      }
+    },
+    studenten: {
+      name: 'Studenten',
+      description: 'Bildung, Mobilität und günstiges Leben',
+      icon: '🎓',
+      groups: {
+        bildung: { weight: 1.2, categories: { kindergarten: 0.8, schools: 0.8, education: 1.2 } },
+        gesundheit: { weight: 1.0, categories: { doctors: 1.0, pharmacies: 1.0 } },
+        freizeit: { weight: 1.1, categories: { culture: 1.1, sports: 1.0, parks: 1.0, restaurants: 1.1 } },
+        nahverkehr: { weight: 1.2, categories: { transport: 1.2 } },
+        alltag: { weight: 1.0, categories: { supermarkets: 1.1, shopping: 0.8, finance: 0.8, safety: 1.0, services: 0.8, hairdresser: 0.8 } }
+      }
+    }
+  }
+
+  const [selectedPreset, setSelectedPreset] = useState<string>('default')
+
+  // Funktion zum Anwenden eines Presets
+  const applyPreset = (presetKey: string) => {
+    const preset = weightingPresets[presetKey as keyof typeof weightingPresets]
+    if (!preset) return
+
+    const newCategoryGroups = { ...categoryGroups }
+    
+    // Alle Kategorien-Gruppen durchgehen
+    Object.entries(preset.groups).forEach(([groupKey, groupData]) => {
+      if (newCategoryGroups[groupKey]) {
+        // Gruppengewichtung setzen
+        newCategoryGroups[groupKey].weight = groupData.weight
+        
+        // Kategoriengewichtungen setzen
+        Object.entries(groupData.categories).forEach(([categoryKey, categoryWeight]) => {
+          const categoryIndex = newCategoryGroups[groupKey].categories.findIndex(c => c.key === categoryKey)
+          if (categoryIndex !== -1) {
+            newCategoryGroups[groupKey].categories[categoryIndex].weight = categoryWeight
+          }
+        })
+      }
+    })
+
+    setCategoryGroups(newCategoryGroups)
+    setSelectedPreset(presetKey)
+  }
+
+  // Funktion zum Zurücksetzen auf Standard-Preset
+  const resetToDefault = () => {
+    applyPreset('default')
+  }
+
+  // Funktion zum Erkennen des aktuellen Presets basierend auf Gewichtungen
+  const detectCurrentPreset = () => {
+    for (const [key, preset] of Object.entries(weightingPresets)) {
+      let matches = true
+      
+      // Prüfe alle Gruppengewichtungen
+      for (const [groupKey, groupData] of Object.entries(preset.groups)) {
+        if (!categoryGroups[groupKey] || Math.abs(categoryGroups[groupKey].weight - groupData.weight) > 0.01) {
+          matches = false
+          break
+        }
+        
+        // Prüfe alle Kategoriengewichtungen
+        for (const [categoryKey, categoryWeight] of Object.entries(groupData.categories)) {
+          const category = categoryGroups[groupKey].categories.find(c => c.key === categoryKey)
+          if (!category || Math.abs(category.weight - categoryWeight) > 0.01) {
+            matches = false
+            break
+          }
+        }
+        
+        if (!matches) break
+      }
+      
+      if (matches) {
+        return key
+      }
+    }
+    
+    return 'custom' // Benutzerdefinierte Gewichtungen
+  }
+
+  // Aktualisiere den Preset-Status bei Änderungen
+  useEffect(() => {
+    const currentPreset = detectCurrentPreset()
+    if (currentPreset !== selectedPreset) {
+      setSelectedPreset(currentPreset)
+    }
+  }, [categoryGroups])
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
       darkMode 
@@ -669,6 +807,92 @@ export default function Home() {
               }`}>
                 <span className={`mt-0.5 ${darkMode ? 'text-red-400' : 'text-red-500'}`}>⚠️</span>
                 <span className="text-sm">{error}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Gewichtungspresets */}
+          <div className={`rounded-2xl shadow-xl border p-6 lg:p-8 backdrop-blur-sm transition-colors duration-300 ${
+            darkMode 
+              ? 'bg-slate-800/80 border-slate-600/30' 
+              : 'bg-white/80 border-white/20'
+          }`}>
+            <div className="mb-4">
+              <h3 className={`text-lg font-bold flex items-center gap-2 ${
+                darkMode ? 'text-gray-200' : 'text-gray-800'
+              }`}>
+                <span className="text-xl">⚖️</span>
+                Gewichtungspresets
+              </h3>
+              <p className={`text-sm mt-1 ${
+                darkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                Wähle ein Preset basierend auf deinen Prioritäten
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+              {Object.entries(weightingPresets).map(([key, preset]) => (
+                <button
+                  key={key}
+                  onClick={() => applyPreset(key)}
+                  className={`p-4 rounded-xl border transition-all duration-200 text-left hover:scale-105 ${
+                    selectedPreset === key
+                      ? darkMode 
+                        ? 'bg-emerald-900/50 border-emerald-500 text-emerald-300' 
+                        : 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                      : darkMode 
+                        ? 'bg-slate-700/50 border-slate-600 text-gray-200 hover:border-emerald-500 hover:bg-slate-700/80' 
+                        : 'bg-white/80 border-gray-200 text-gray-700 hover:border-emerald-300 hover:bg-emerald-50/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">{preset.icon}</span>
+                    <span className="font-medium text-sm">{preset.name}</span>
+                  </div>
+                  <p className={`text-xs ${
+                    selectedPreset === key
+                      ? darkMode ? 'text-emerald-400' : 'text-emerald-600'
+                      : darkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    {preset.description}
+                  </p>
+                </button>
+              ))}
+              
+              {/* Benutzerdefinierte Gewichtungen Anzeige */}
+              {selectedPreset === 'custom' && (
+                <div className={`p-4 rounded-xl border ${
+                  darkMode 
+                    ? 'bg-amber-900/50 border-amber-500 text-amber-300' 
+                    : 'bg-amber-50 border-amber-300 text-amber-700'
+                }`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">🎛️</span>
+                    <span className="font-medium text-sm">Benutzerdefiniert</span>
+                  </div>
+                  <p className={`text-xs ${
+                    darkMode ? 'text-amber-400' : 'text-amber-600'
+                  }`}>
+                    Individuelle Gewichtungen
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {/* Reset Button */}
+            {selectedPreset !== 'default' && (
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={resetToDefault}
+                  className={`px-4 py-2 rounded-lg border transition-all duration-200 text-sm font-medium ${
+                    darkMode 
+                      ? 'bg-slate-700/50 border-slate-600 text-gray-200 hover:bg-slate-600/80' 
+                      : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  ↩️ Zurück zu Standard
+                </button>
               </div>
             )}
           </div>
