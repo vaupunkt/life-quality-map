@@ -77,6 +77,7 @@ export default function Home() {
   const [error, setError] = useState('')
   const [showHeatmap, setShowHeatmap] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [darkMode, setDarkMode] = useState(false)
   const [radiusSettings, setRadiusSettings] = useState({
     walking: 800,     // 800m walking distance
     cycling: 2000,    // 2km cycling distance  
@@ -399,6 +400,20 @@ export default function Home() {
     { value: 0.8, label: 'unwichtig' }
   ]
 
+  // Funktion für farbige Bewertungen basierend auf Score
+  const getScoreColor = (score: number) => {
+    if (score >= 8) return 'from-green-500 to-emerald-500'
+    if (score >= 6) return 'from-yellow-400 to-green-500'
+    if (score >= 4) return 'from-orange-400 to-yellow-500'
+    if (score >= 2) return 'from-red-400 to-orange-500'
+    return 'from-red-600 to-red-500'
+  }
+
+  const getScoreTextColor = (score: number) => {
+    if (score >= 6) return 'text-white'
+    return 'text-white'
+  }
+
   // Lokale Neuberechnung der Gesamtbewertung basierend auf Kategorienauswahl und Gewichtung
   const recalculateScoreLocally = (currentScore: QualityScore): QualityScore => {
     let overallScore = 0
@@ -443,227 +458,410 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50">
+    <div className={`min-h-screen transition-colors duration-300 ${
+      darkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900' 
+        : 'bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50'
+    }`}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         <div className="text-center mb-8 lg:mb-12">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-2">
-            Lebensqualitäts-Karte
-          </h1>
-          <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 ${
+              darkMode 
+                ? 'bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent' 
+                : 'bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent'
+            }`}>
+              Lebensqualitäts-Karte
+            </h1>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-xl transition-all duration-200 hover:scale-110 ${
+                darkMode 
+                  ? 'bg-slate-700 hover:bg-slate-600 text-yellow-400' 
+                  : 'bg-white/80 hover:bg-white text-gray-600 hover:text-yellow-500'
+              } shadow-lg`}
+              title={darkMode ? 'Light Mode' : 'Dark Mode'}
+            >
+              <span className="text-xl">{darkMode ? '☀️' : '🌙'}</span>
+            </button>
+          </div>
+          <p className={`text-sm sm:text-base max-w-2xl mx-auto ${
+            darkMode ? 'text-gray-300' : 'text-gray-600'
+          }`}>
             Entdecke die Lebensqualität an jedem Ort - von Bildung bis Freizeit, alles auf einen Blick
           </p>
         </div>
         
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6">
           {/* Address Input */}
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <form onSubmit={handleAddressSubmit} className="flex gap-4">
+          <div className={`rounded-2xl shadow-xl border p-6 lg:p-8 backdrop-blur-sm transition-colors duration-300 ${
+            darkMode 
+              ? 'bg-slate-800/80 border-slate-600/30' 
+              : 'bg-white/80 border-white/20'
+          }`}>
+            <div className="mb-4">
+              <label className={`block text-sm font-medium mb-2 ${
+                darkMode ? 'text-gray-200' : 'text-gray-700'
+              }`}>
+                📍 Adresse oder Ort eingeben
+              </label>
+            </div>
+            <form onSubmit={handleAddressSubmit} className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Adresse eingeben (z.B. Alexanderplatz, Berlin) oder auf die Karte klicken"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                placeholder="z.B. Alexanderplatz, Berlin oder klicke auf die Karte"
+                className={`flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
+                  darkMode 
+                    ? 'bg-slate-700/80 border-slate-600 text-white placeholder-gray-400' 
+                    : 'bg-white/80 border-gray-200 text-gray-900 placeholder-gray-400'
+                }`}
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-xl hover:from-emerald-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none whitespace-nowrap"
               >
-                {loading ? 'Laden...' : 'Bewerten'}
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Laden...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span>🔍</span>
+                    <span>Bewerten</span>
+                  </div>
+                )}
               </button>
             </form>
             
             {error && (
-              <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                {error}
+              <div className={`mt-4 p-4 border rounded-xl flex items-start gap-3 ${
+                darkMode 
+                  ? 'bg-red-900/50 border-red-700 text-red-300' 
+                  : 'bg-red-50 border-red-200 text-red-700'
+              }`}>
+                <span className={`mt-0.5 ${darkMode ? 'text-red-400' : 'text-red-500'}`}>⚠️</span>
+                <span className="text-sm">{error}</span>
               </div>
             )}
           </div>
 
           {/* Controls */}
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={`rounded-2xl shadow-xl border p-6 lg:p-8 backdrop-blur-sm transition-colors duration-300 ${
+            darkMode 
+              ? 'bg-slate-800/80 border-slate-600/30' 
+              : 'bg-white/80 border-white/20'
+          }`}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
               {/* Radius Selection */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-800">Entfernung</h3>
-                <div className="space-y-2">
-                  <label className="flex items-center">
+              <div className="space-y-4">
+                <h3 className={`text-lg font-bold flex items-center gap-2 ${
+                  darkMode ? 'text-gray-200' : 'text-gray-800'
+                }`}>
+                  <span className="text-xl">📏</span>
+                  Suchradius
+                </h3>
+                <div className="space-y-3">
+                  <label className={`flex items-center p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    darkMode 
+                      ? 'border-slate-600 hover:border-emerald-500 hover:bg-slate-700/50' 
+                      : 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50'
+                  }`}>
                     <input
                       type="radio"
                       name="radius"
                       value="walking"
                       checked={radiusSettings.activeRadius === 'walking'}
                       onChange={(e) => setRadiusSettings({...radiusSettings, activeRadius: e.target.value as 'walking'})}
-                      className="mr-2"
+                      className="mr-3 text-emerald-500 focus:ring-emerald-400"
                     />
-                    <span className="text-gray-700">Laufbare Entfernung ({radiusSettings.walking}m)</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🚶</span>
+                      <span className={`font-medium ${
+                        darkMode ? 'text-gray-200' : 'text-gray-700'
+                      }`}>Zu Fuß ({radiusSettings.walking}m)</span>
+                    </div>
                   </label>
-                  <label className="flex items-center">
+                  <label className={`flex items-center p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    darkMode 
+                      ? 'border-slate-600 hover:border-emerald-500 hover:bg-slate-700/50' 
+                      : 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50'
+                  }`}>
                     <input
                       type="radio"
                       name="radius"
                       value="cycling"
                       checked={radiusSettings.activeRadius === 'cycling'}
                       onChange={(e) => setRadiusSettings({...radiusSettings, activeRadius: e.target.value as 'cycling'})}
-                      className="mr-2"
+                      className="mr-3 text-emerald-500 focus:ring-emerald-400"
                     />
-                    <span className="text-gray-700">Fahrrad-Entfernung ({radiusSettings.cycling/1000}km)</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🚲</span>
+                      <span className={`font-medium ${
+                        darkMode ? 'text-gray-200' : 'text-gray-700'
+                      }`}>Fahrrad ({radiusSettings.cycling/1000}km)</span>
+                    </div>
                   </label>
-                  <label className="flex items-center">
+                  <label className={`flex items-center p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    darkMode 
+                      ? 'border-slate-600 hover:border-emerald-500 hover:bg-slate-700/50' 
+                      : 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50'
+                  }`}>
                     <input
                       type="radio"
                       name="radius"
                       value="driving"
                       checked={radiusSettings.activeRadius === 'driving'}
                       onChange={(e) => setRadiusSettings({...radiusSettings, activeRadius: e.target.value as 'driving'})}
-                      className="mr-2"
+                      className="mr-3 text-emerald-500 focus:ring-emerald-400"
                     />
-                    <span className="text-gray-700">Auto-Entfernung ({radiusSettings.driving/1000}km)</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🚗</span>
+                      <span className={`font-medium ${
+                        darkMode ? 'text-gray-200' : 'text-gray-700'
+                      }`}>Auto ({radiusSettings.driving/1000}km)</span>
+                    </div>
                   </label>
                 </div>
               </div>
 
-              {/* Heatmap Toggle */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-800">Ansicht</h3>
-                <div className="space-y-2">
-                  <label className="flex items-center">
+              {/* View Options */}
+              <div className="space-y-4">
+                <h3 className={`text-lg font-bold flex items-center gap-2 ${
+                  darkMode ? 'text-gray-200' : 'text-gray-800'
+                }`}>
+                  <span className="text-xl">👁️</span>
+                  Ansichtsoptionen
+                </h3>
+                <div className="space-y-3">
+                  <label className={`flex items-center p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    darkMode 
+                      ? 'border-slate-600 hover:border-emerald-500 hover:bg-slate-700/50' 
+                      : 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50'
+                  }`}>
                     <input
                       type="checkbox"
                       checked={showHeatmap}
                       onChange={(e) => setShowHeatmap(e.target.checked)}
-                      className="mr-2"
+                      className="mr-3 text-emerald-500 focus:ring-emerald-400 rounded"
                     />
-                    <span className="text-gray-700">Luftqualität/Verkehr anzeigen</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🌡️</span>
+                      <span className={`font-medium ${
+                        darkMode ? 'text-gray-200' : 'text-gray-700'
+                      }`}>Umweltdaten anzeigen</span>
+                    </div>
                   </label>
                   <button
                     onClick={() => setShowSettings(true)}
-                    className="w-full mt-3 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    className={`w-full p-3 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-2 hover:shadow-md ${
+                      darkMode 
+                        ? 'bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-gray-200' 
+                        : 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700'
+                    }`}
                   >
-                    Einstellungen
+                    <span className="text-lg">⚙️</span>
+                    <span>Erweiterte Einstellungen</span>
                   </button>
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  Zeigt simulierte Daten für Luftverschmutzung und Verkehrsbelastung
-                </p>
+                <div className={`mt-4 p-3 rounded-xl border ${
+                  darkMode 
+                    ? 'bg-blue-900/50 border-blue-700 text-blue-300' 
+                    : 'bg-blue-50 border-blue-200 text-blue-700'
+                }`}>
+                  <p className="text-xs">
+                    <strong>💡 Tipp:</strong> Umweltdaten zeigen simulierte Werte für Lärm und Verkehrsbelastung
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Quality Score Display - Gruppiert mit direkter Kontrolle */}
+          {/* Quality Score Display und Map - Neues Layout */}
           {qualityScore && (
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">
-                Lebensqualitäts-Score für {qualityScore.address}
-              </h2>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
+              {/* Linke Seite: Bewertungen und Einstellungen */}
+              <div className="space-y-6">
                 {/* Gesamtbewertung */}
-                <div className="text-center relative">
-                  <div className="text-6xl font-bold text-blue-600 mb-2">
-                    {recalculatingScore ? (
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
-                      </div>
-                    ) : (
-                      qualityScore.overall
-                    )}
+                <div className={`rounded-2xl shadow-xl border p-6 backdrop-blur-sm transition-colors duration-300 ${
+                  darkMode 
+                    ? 'bg-slate-800/80 border-slate-600/30' 
+                    : 'bg-white/80 border-white/20'
+                }`}>
+                  <div className="mb-6">
+                    <h2 className={`text-2xl lg:text-3xl font-bold mb-2 ${
+                      darkMode ? 'text-gray-200' : 'text-gray-800'
+                    }`}>
+                      📊 Lebensqualitäts-Analyse
+                    </h2>
+                    <p className={`text-sm lg:text-base ${
+                      darkMode ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      für <span className="font-semibold text-emerald-500">{qualityScore.address}</span>
+                    </p>
                   </div>
-                  <div className="text-lg text-gray-600">
-                    Gesamtbewertung
+                  
+                  {/* Große Gesamtbewertung mit Farbverlauf */}
+                  <div className="text-center mb-6">
+                    <div className={`inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br ${getScoreColor(qualityScore.overall)} shadow-2xl mb-4`}>
+                      <div className={`text-4xl font-bold ${getScoreTextColor(qualityScore.overall)}`}>
+                        {recalculatingScore ? (
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-white"></div>
+                        ) : (
+                          qualityScore.overall
+                        )}
+                      </div>
+                    </div>
+                    <div className={`text-lg font-medium mb-2 ${
+                      darkMode ? 'text-gray-200' : 'text-gray-600'
+                    }`}>
+                      Gesamtbewertung
+                    </div>
+                    <div className="flex justify-center">
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span
+                            key={star}
+                            className={`text-lg ${
+                              star <= qualityScore.overall / 2 ? 'text-yellow-400' : 'text-gray-300'
+                            }`}
+                          >
+                            ⭐
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                     {recalculatingScore && (
-                      <div className="text-sm text-blue-500 mt-1">wird neu berechnet...</div>
+                      <div className="text-xs text-emerald-500 mt-2 font-medium">
+                        wird neu berechnet...
+                      </div>
                     )}
                   </div>
                 </div>
-                
-                {/* Gruppierte Kategorien mit Kontrollen */}
-                <div className="lg:col-span-2 space-y-4">
+
+                {/* Gruppierte Kategorien */}
+                <div className="space-y-4">
                   {Object.entries(categoryGroups)
                     .sort((a, b) => a[1].order - b[1].order)
                     .map(([groupKey, group]) => (
-                    <div key={groupKey} className="border border-gray-200 rounded-lg">
+                    <div key={groupKey} className={`rounded-xl border overflow-hidden hover:shadow-lg transition-all duration-200 ${
+                      darkMode 
+                        ? 'bg-slate-800 border-slate-600' 
+                        : 'bg-white border-gray-200'
+                    }`}>
                       {/* Gruppen-Header mit Kontrollen */}
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-t-lg">
-                        <div className="flex items-center gap-2">
+                      <div className={`flex items-center justify-between p-4 border-b ${
+                        darkMode 
+                          ? 'bg-gradient-to-r from-slate-700 to-slate-600 border-slate-600' 
+                          : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200'
+                      }`}>
+                        <div className="flex items-center gap-3">
                           <input
                             type="checkbox"
                             checked={group.enabled}
                             onChange={() => toggleGroupVisibility(groupKey)}
-                            className="w-4 h-4"
+                            className="w-5 h-5 text-emerald-500 focus:ring-emerald-400 rounded"
                           />
                           <div 
-                            className="flex items-center gap-2 cursor-pointer"
+                            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => toggleGroupVisibility(groupKey)}
                           >
-                            <span className="text-lg">{group.icon}</span>
-                            <span className="font-medium text-gray-800">{group.title}</span>
-                            <span className="text-sm text-gray-500">
-                              ({getWeightLabel(group.weight)})
-                            </span>
+                            <span className="text-2xl">{group.icon}</span>
+                            <div>
+                              <span className={`font-bold text-lg ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              }`}>{group.title}</span>
+                              <div className={`text-sm ${
+                                darkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                {getWeightLabel(group.weight)}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => toggleGroup(groupKey)}
-                            className="p-1 text-gray-400 hover:text-gray-600"
-                          >
+                        <button
+                          onClick={() => toggleGroup(groupKey)}
+                          className={`p-2 rounded-lg transition-all duration-200 ${
+                            darkMode 
+                              ? 'text-gray-400 hover:text-gray-200 hover:bg-slate-600' 
+                              : 'text-gray-400 hover:text-gray-600 hover:bg-white'
+                          }`}
+                        >
+                          <span className="text-lg">
                             {expandedGroups[groupKey] ? '▲' : '▼'}
-                          </button>
-                        </div>
+                          </span>
+                        </button>
                       </div>
                       
                       {/* Kategorien */}
-                      <div className="p-3 bg-white rounded-b-lg border-t border-gray-200">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {group.categories.map(category => {
-                            const score = qualityScore?.[category.key as keyof QualityScore] as number
-                            const amenityKey = category.key === 'kindergarten' ? 'kindergartens' : 
-                                             category.key === 'schools' ? 'schools' :
-                                             category.key === 'education' ? 'education' :
-                                             category.key === 'doctors' ? 'doctors' :
-                                             category.key === 'pharmacies' ? 'pharmacies' :
-                                             category.key === 'culture' ? 'culture' :
-                                             category.key === 'sports' ? 'sports' :
-                                             category.key === 'parks' ? 'parks' :
-                                             category.key === 'transport' ? 'transport' :
-                                             category.key === 'restaurants' ? 'restaurants' :
-                                             category.key === 'supermarkets' ? 'supermarkets' :
-                                             category.key === 'shopping' ? 'shopping' :
-                                             category.key === 'finance' ? 'finance' :
-                                             category.key === 'safety' ? 'safety' :
-                                             category.key === 'services' ? 'services' : null
-                            
-                            const amenityCount = amenityKey ? (qualityScore?.amenities?.[amenityKey as keyof typeof qualityScore.amenities]?.length || 0) : 0
-                            
-                            return (
-                              <div key={category.key} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={category.enabled && group.enabled}
-                                    disabled={!group.enabled}
-                                    onChange={() => toggleCategoryVisibility(groupKey, category.key)}
-                                    className="w-3 h-3"
-                                  />
-                                  <div 
-                                    className={`flex items-center gap-2 ${!group.enabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                                    onClick={() => group.enabled && toggleCategoryVisibility(groupKey, category.key)}
-                                  >
-                                    <div className={`w-3 h-3 rounded-full ${getCategoryColor(category.key)}`}></div>
-                                    <span className="text-sm text-gray-700">{category.label}</span>
+                      {expandedGroups[groupKey] && (
+                        <div className="p-4">
+                          <div className="grid grid-cols-1 gap-3">
+                            {group.categories.map(category => {
+                              const score = qualityScore?.[category.key as keyof QualityScore] as number
+                              const amenityKey = category.key === 'kindergarten' ? 'kindergartens' : 
+                                               category.key === 'schools' ? 'schools' :
+                                               category.key === 'education' ? 'education' :
+                                               category.key === 'doctors' ? 'doctors' :
+                                               category.key === 'pharmacies' ? 'pharmacies' :
+                                               category.key === 'culture' ? 'culture' :
+                                               category.key === 'sports' ? 'sports' :
+                                               category.key === 'parks' ? 'parks' :
+                                               category.key === 'transport' ? 'transport' :
+                                               category.key === 'restaurants' ? 'restaurants' :
+                                               category.key === 'supermarkets' ? 'supermarkets' :
+                                               category.key === 'shopping' ? 'shopping' :
+                                               category.key === 'finance' ? 'finance' :
+                                               category.key === 'safety' ? 'safety' :
+                                               category.key === 'services' ? 'services' : null
+                              
+                              const amenityCount = amenityKey ? (qualityScore?.amenities?.[amenityKey as keyof typeof qualityScore.amenities]?.length || 0) : 0
+                              
+                              return (
+                                <div key={category.key} className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 ${
+                                  darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-50'
+                                }`}>
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <input
+                                      type="checkbox"
+                                      checked={category.enabled && group.enabled}
+                                      disabled={!group.enabled}
+                                      onChange={() => toggleCategoryVisibility(groupKey, category.key)}
+                                      className="w-4 h-4 text-emerald-500 focus:ring-emerald-400 rounded"
+                                    />
+                                    <div 
+                                      className={`flex items-center gap-3 flex-1 ${!group.enabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                                      onClick={() => group.enabled && toggleCategoryVisibility(groupKey, category.key)}
+                                    >
+                                      <div className={`w-4 h-4 rounded-full ${getCategoryColor(category.key)}`}></div>
+                                      <span className={`text-sm font-medium flex-1 ${
+                                        darkMode ? 'text-gray-200' : 'text-gray-700'
+                                      }`}>{category.label}</span>
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-500">
-                                    {score}/10 ({amenityCount} gefunden)
-                                  </span>
-                                  {expandedGroups[groupKey] && (
+                                  <div className="flex items-center gap-3">
+                                    {/* Farbiger Score-Badge */}
+                                    <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getScoreColor(score)} ${getScoreTextColor(score)} font-bold text-sm min-w-[50px] text-center`}>
+                                      {score}/10
+                                    </div>
+                                    <div className="text-right">
+                                      <div className={`text-xs ${
+                                        darkMode ? 'text-gray-400' : 'text-gray-500'
+                                      }`}>
+                                        {amenityCount} gefunden
+                                      </div>
+                                    </div>
                                     <select
                                       value={category.weight}
                                       onChange={(e) => updateCategoryWeight(groupKey, category.key, parseFloat(e.target.value))}
-                                      className="text-xs px-1 py-1 border rounded bg-white"
+                                      className={`text-xs px-2 py-1 border rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${
+                                        darkMode 
+                                          ? 'bg-slate-700 border-slate-600 text-gray-200' 
+                                          : 'bg-white border-gray-300'
+                                      }`}
                                       title="Gewichtung"
                                     >
                                       {weightOptions.map(option => (
@@ -672,22 +870,28 @@ export default function Home() {
                                         </option>
                                       ))}
                                     </select>
-                                  )}
+                                  </div>
                                 </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                        
-                        {/* Gruppengewichtung anpassbar */}
-                        {expandedGroups[groupKey] && (
-                          <div className="mt-3 pt-3 border-t border-gray-100">
-                            <div className="flex items-center gap-2">
-                              <label className="text-xs text-gray-600">Gruppengewichtung:</label>
+                              )
+                            })}
+                          </div>
+                          
+                          {/* Gruppengewichtung anpassbar */}
+                          <div className={`mt-4 pt-4 border-t ${
+                            darkMode ? 'border-slate-600' : 'border-gray-200'
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <label className={`text-sm font-medium ${
+                                darkMode ? 'text-gray-300' : 'text-gray-600'
+                              }`}>Gruppengewichtung:</label>
                               <select
                                 value={group.weight}
                                 onChange={(e) => updateGroupWeight(groupKey, parseFloat(e.target.value))}
-                                className="text-xs px-2 py-1 border rounded bg-white"
+                                className={`text-sm px-3 py-1 border rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${
+                                  darkMode 
+                                    ? 'bg-slate-700 border-slate-600 text-gray-200' 
+                                    : 'bg-white border-gray-300'
+                                }`}
                               >
                                 {weightOptions.map(option => (
                                   <option key={option.value} value={option.value}>
@@ -697,22 +901,118 @@ export default function Home() {
                               </select>
                             </div>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                   
                   {/* Lärmbelastung und Verkehr */}
-                  <div className="border border-gray-200 rounded-lg p-3 bg-red-50">
-                    <h3 className="font-medium text-gray-800 mb-2">Belastungen</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-700">Lärmbelastung</span>
-                        <span className="font-semibold text-red-600">{qualityScore.noise}/10</span>
+                  <div className={`rounded-xl border p-4 ${
+                    darkMode 
+                      ? 'bg-gradient-to-r from-red-900/50 to-orange-900/50 border-red-700' 
+                      : 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200'
+                  }`}>
+                    <h3 className={`font-bold mb-3 flex items-center gap-2 ${
+                      darkMode ? 'text-gray-200' : 'text-gray-800'
+                    }`}>
+                      <span className="text-xl">⚠️</span>
+                      Belastungsfaktoren
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className={`flex justify-between items-center p-3 rounded-lg ${
+                        darkMode ? 'bg-slate-700' : 'bg-white'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🔊</span>
+                          <span className={`font-medium ${
+                            darkMode ? 'text-gray-200' : 'text-gray-700'
+                          }`}>Lärm</span>
+                        </div>
+                        <span className="font-bold text-red-500 text-lg">{qualityScore.noise}/10</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-700">Verkehrsbelastung</span>
-                        <span className="font-semibold text-red-600">{qualityScore.traffic}/10</span>
+                      <div className={`flex justify-between items-center p-3 rounded-lg ${
+                        darkMode ? 'bg-slate-700' : 'bg-white'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🚦</span>
+                          <span className={`font-medium ${
+                            darkMode ? 'text-gray-200' : 'text-gray-700'
+                          }`}>Verkehr</span>
+                        </div>
+                        <span className="font-bold text-red-500 text-lg">{qualityScore.traffic}/10</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rechte Seite: Karte */}
+              <div className={`rounded-2xl shadow-xl border backdrop-blur-sm transition-colors duration-300 ${
+                darkMode 
+                  ? 'bg-slate-800/80 border-slate-600/30' 
+                  : 'bg-white/80 border-white/20'
+              }`}>
+                <div className="p-6">
+                  <div className="mb-6">
+                    <h2 className={`text-2xl lg:text-3xl font-bold mb-2 flex items-center gap-3 ${
+                      darkMode ? 'text-gray-200' : 'text-gray-800'
+                    }`}>
+                      <span className="text-2xl">🗺️</span>
+                      Interaktive Karte
+                    </h2>
+                    <p className={`text-sm lg:text-base ${
+                      darkMode ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      Klicke auf die Karte, um einen neuen Standort zu analysieren
+                    </p>
+                  </div>
+                  
+                  <div className="h-96 lg:h-[600px] w-full relative rounded-xl overflow-hidden shadow-lg">
+                    {mapLoading && (
+                      <div className={`absolute inset-0 backdrop-blur-sm flex items-center justify-center z-10 ${
+                        darkMode ? 'bg-slate-800/90' : 'bg-white/90'
+                      }`}>
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-emerald-500"></div>
+                          <span className={`font-medium ${
+                            darkMode ? 'text-gray-200' : 'text-gray-700'
+                          }`}>Daten werden geladen...</span>
+                        </div>
+                      </div>
+                    )}
+                    <Map 
+                      qualityScore={qualityScore} 
+                      onLocationClick={handleLocationClick}
+                      showHeatmap={showHeatmap}
+                      radiusSettings={radiusSettings}
+                      categoryVisibility={categoryVisibility}
+                    />
+                  </div>
+                  
+                  {/* Info-Box für Benutzer */}
+                  <div className={`mt-6 p-4 rounded-xl border ${
+                    darkMode 
+                      ? 'bg-gradient-to-r from-blue-900/50 to-emerald-900/50 border-blue-700 text-blue-300' 
+                      : 'bg-gradient-to-r from-blue-50 to-emerald-50 border-blue-200 text-blue-700'
+                  }`}>
+                    <h4 className={`font-bold mb-3 flex items-center gap-2 ${
+                      darkMode ? 'text-blue-200' : 'text-blue-800'
+                    }`}>
+                      <span className="text-lg">ℹ️</span>
+                      Karteninformation
+                    </h4>
+                    <div className="text-sm space-y-2">
+                      <div className="flex items-start gap-2">
+                        <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
+                        <span><strong>Basiskarte:</strong> Zeigt alle OpenStreetMap-Daten (Gebäude, Straßen, etc.)</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
+                        <span><strong>Farbige Marker:</strong> Zeigen nur die von unserer API erfassten Einrichtungen im gewählten Radius ({radiusSettings.activeRadius === 'walking' ? `${radiusSettings.walking}m` : radiusSettings.activeRadius === 'cycling' ? `${radiusSettings.cycling/1000}km` : `${radiusSettings.driving/1000}km`})</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
+                        <span><strong>Fehlende Marker?</strong> Möglicherweise unvollständige OpenStreetMap-Daten oder außerhalb des Suchradius</span>
                       </div>
                     </div>
                   </div>
@@ -721,41 +1021,50 @@ export default function Home() {
             </div>
           )}
 
-          {/* Map */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <div className="mb-4">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Interaktive Karte</h2>
+          {/* Wenn keine Bewertung vorhanden, zeige nur die Karte */}
+          {!qualityScore && (
+            <div className={`rounded-2xl shadow-xl border p-6 lg:p-8 backdrop-blur-sm transition-colors duration-300 ${
+              darkMode 
+                ? 'bg-slate-800/80 border-slate-600/30' 
+                : 'bg-white/80 border-white/20'
+            }`}>
+              <div className="mb-6">
+                <h2 className={`text-2xl lg:text-3xl font-bold mb-2 flex items-center gap-3 ${
+                  darkMode ? 'text-gray-200' : 'text-gray-800'
+                }`}>
+                  <span className="text-2xl">🗺️</span>
+                  Interaktive Karte
+                </h2>
+                <p className={`text-sm lg:text-base ${
+                  darkMode ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  Klicke auf die Karte, um einen neuen Standort zu analysieren
+                </p>
+              </div>
               
-              
-            
-            <div className="h-96 w-full relative">
-              {mapLoading && (
-                <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    <span className="text-gray-600">Daten werden geladen...</span>
+              <div className="h-96 lg:h-[500px] w-full relative rounded-xl overflow-hidden shadow-lg">
+                {mapLoading && (
+                  <div className={`absolute inset-0 backdrop-blur-sm flex items-center justify-center z-10 ${
+                    darkMode ? 'bg-slate-800/90' : 'bg-white/90'
+                  }`}>
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-emerald-500"></div>
+                      <span className={`font-medium ${
+                        darkMode ? 'text-gray-200' : 'text-gray-700'
+                      }`}>Daten werden geladen...</span>
+                    </div>
                   </div>
-                </div>
-              )}
-              <Map 
-                qualityScore={qualityScore} 
-                onLocationClick={handleLocationClick}
-                showHeatmap={showHeatmap}
-                radiusSettings={radiusSettings}
-                categoryVisibility={categoryVisibility}
-              />
-            </div>
-            {/* Info-Box für Benutzer */}
-            <div className="mt-7 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-medium text-blue-800 mb-2">📍 Karteninformation</h4>
-                <div className="text-sm text-blue-700 space-y-1">
-                  <p><strong>Basiskarte:</strong> Zeigt alle OpenStreetMap-Daten (Gebäude, Straßen, etc.)</p>
-                  <p><strong>Farbige Marker:</strong> Zeigen nur die von unserer API erfassten Einrichtungen im gewählten Radius ({radiusSettings.activeRadius === 'walking' ? `${radiusSettings.walking}m` : radiusSettings.activeRadius === 'cycling' ? `${radiusSettings.cycling/1000}km` : `${radiusSettings.driving/1000}km`})</p>
-                  <p><strong>Fehlende Marker?</strong> Möglicherweise unvollständige OpenStreetMap-Daten oder außerhalb des Suchradius</p>
-                </div>
+                )}
+                <Map 
+                  qualityScore={qualityScore} 
+                  onLocationClick={handleLocationClick}
+                  showHeatmap={showHeatmap}
+                  radiusSettings={radiusSettings}
+                  categoryVisibility={categoryVisibility}
+                />
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
       
