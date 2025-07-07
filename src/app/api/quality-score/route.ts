@@ -1,5 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Hilfsfunktion zur Berechnung der Entfernung zwischen zwei Punkten in Metern
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371e3 // Erdradius in Metern
+  const φ1 = lat1 * Math.PI / 180
+  const φ2 = lat2 * Math.PI / 180
+  const Δφ = (lat2 - lat1) * Math.PI / 180
+  const Δλ = (lng2 - lng1) * Math.PI / 180
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+
+  return R * c
+}
+
+// Hilfsfunktion zur Normalisierung von Namen für Duplikat-Erkennung
+function normalizeName(name: string): string {
+  return name.toLowerCase()
+    .replace(/[äöüß]/g, (char) => {
+      const map: {[key: string]: string} = { 'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'ß': 'ss' }
+      return map[char] || char
+    })
+    .replace(/[^\w\s]/g, '') // Entferne Sonderzeichen
+    .replace(/\s+/g, ' ')   // Mehrere Leerzeichen zu einem
+    .trim()
+}
+
+// Hilfsfunktion zur Duplikat-Filterung
+function removeDuplicates<T extends {lat: number, lng: number, name: string}>(items: T[]): T[] {
+  const filtered: T[] = []
+  const duplicateThreshold = 50 // 50 Meter Mindestabstand
+  
+  for (const item of items) {
+    const normalizedName = normalizeName(item.name)
+    
+    // Prüfe ob bereits ein ähnliches Element existiert
+    const isDuplicate = filtered.some(existing => {
+      const existingNormalizedName = normalizeName(existing.name)
+      const distance = calculateDistance(item.lat, item.lng, existing.lat, existing.lng)
+      
+      // Duplikat wenn: gleicher Name ODER sehr nah beieinander (< 50m) mit ähnlichem Namen
+      const sameOrSimilarName = existingNormalizedName === normalizedName || 
+                               (distance < duplicateThreshold && 
+                                (existingNormalizedName.includes(normalizedName) || 
+                                 normalizedName.includes(existingNormalizedName)))
+      
+      return sameOrSimilarName && distance < duplicateThreshold
+    })
+    
+    if (!isDuplicate) {
+      filtered.push(item)
+    }
+  }
+  
+  return filtered
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { lat, lng, address, radius = 1000, categoryGroups, categoryVisibility } = await request.json()
@@ -22,288 +80,267 @@ async function calculateQualityScore(
   lat: number, 
   lng: number, 
   address: string, 
-  radius: number = 1000,
+  radius: number = 1500,
   categoryGroups?: any,
   categoryVisibility?: any
 ) {
-  // Build Overpass API query to find nearby amenities
-  const overpassQuery = `
-    [out:json][timeout:25];
-    (
-      // Kindergärten
-      node["amenity"="kindergarten"](around:${radius},${lat},${lng});
-      way["amenity"="kindergarten"](around:${radius},${lat},${lng});
-      relation["amenity"="kindergarten"](around:${radius},${lat},${lng});
-      
-      // Schulen (alle Schularten)
-      node["amenity"="school"](around:${radius},${lat},${lng});
-      way["amenity"="school"](around:${radius},${lat},${lng});
-      relation["amenity"="school"](around:${radius},${lat},${lng});
-      
-      // Grundschulen spezifisch
-      node["amenity"="school"]["school"="primary"](around:${radius},${lat},${lng});
-      way["amenity"="school"]["school"="primary"](around:${radius},${lat},${lng});
-      
-      // Weiterführende Schulen
-      node["amenity"="school"]["school"="secondary"](around:${radius},${lat},${lng});
-      way["amenity"="school"]["school"="secondary"](around:${radius},${lat},${lng});
-      
-      // Gymnasien
-      node["amenity"="school"]["school"="gymnasium"](around:${radius},${lat},${lng});
-      way["amenity"="school"]["school"="gymnasium"](around:${radius},${lat},${lng});
-      
-      // Supermärkte (erweiterte Suche)
-      node["shop"="supermarket"](around:${radius},${lat},${lng});
-      way["shop"="supermarket"](around:${radius},${lat},${lng});
-      relation["shop"="supermarket"](around:${radius},${lat},${lng});
-      
-      // Weitere Lebensmittelgeschäfte
-      node["shop"="convenience"](around:${radius},${lat},${lng});
-      way["shop"="convenience"](around:${radius},${lat},${lng});
-      node["shop"="grocery"](around:${radius},${lat},${lng});
-      way["shop"="grocery"](around:${radius},${lat},${lng});
-      
-      // Discounter
-      node["shop"="discount"](around:${radius},${lat},${lng});
-      way["shop"="discount"](around:${radius},${lat},${lng});
-      
-      // Ärzte
-      node["amenity"="doctors"](around:${radius},${lat},${lng});
-      way["amenity"="doctors"](around:${radius},${lat},${lng});
-      relation["amenity"="doctors"](around:${radius},${lat},${lng});
-      
-      node["amenity"="hospital"](around:${radius},${lat},${lng});
-      way["amenity"="hospital"](around:${radius},${lat},${lng});
-      relation["amenity"="hospital"](around:${radius},${lat},${lng});
-      
-      // Apotheken
-      node["amenity"="pharmacy"](around:${radius},${lat},${lng});
-      way["amenity"="pharmacy"](around:${radius},${lat},${lng});
-      relation["amenity"="pharmacy"](around:${radius},${lat},${lng});
-      
-      // Freizeit & Kultur
-      node["amenity"="cinema"](around:${radius},${lat},${lng});
-      way["amenity"="cinema"](around:${radius},${lat},${lng});
-      node["tourism"="museum"](around:${radius},${lat},${lng});
-      way["tourism"="museum"](around:${radius},${lat},${lng});
-      node["amenity"="theatre"](around:${radius},${lat},${lng});
-      way["amenity"="theatre"](around:${radius},${lat},${lng});
-      node["amenity"="library"](around:${radius},${lat},${lng});
-      way["amenity"="library"](around:${radius},${lat},${lng});
-      
-      // Sport & Wellness
-      node["leisure"="swimming_pool"](around:${radius},${lat},${lng});
-      way["leisure"="swimming_pool"](around:${radius},${lat},${lng});
-      node["leisure"="fitness_centre"](around:${radius},${lat},${lng});
-      way["leisure"="fitness_centre"](around:${radius},${lat},${lng});
-      node["leisure"="sports_centre"](around:${radius},${lat},${lng});
-      way["leisure"="sports_centre"](around:${radius},${lat},${lng});
-      
-      // Parks & Natur
-      node["leisure"="park"](around:${radius},${lat},${lng});
-      way["leisure"="park"](around:${radius},${lat},${lng});
-      node["leisure"="playground"](around:${radius},${lat},${lng});
-      way["leisure"="playground"](around:${radius},${lat},${lng});
-      
-      // Öffentlicher Verkehr
-      node["highway"="bus_stop"](around:${radius},${lat},${lng});
-      node["railway"="station"](around:${radius},${lat},${lng});
-      node["railway"="tram_stop"](around:${radius},${lat},${lng});
-      
-      // Gastronomie
-      node["amenity"="restaurant"](around:${radius},${lat},${lng});
-      way["amenity"="restaurant"](around:${radius},${lat},${lng});
-      node["amenity"="cafe"](around:${radius},${lat},${lng});
-      way["amenity"="cafe"](around:${radius},${lat},${lng});
-      node["amenity"="fast_food"](around:${radius},${lat},${lng});
-      way["amenity"="fast_food"](around:${radius},${lat},${lng});
-      
-      // Einkaufen
-      node["shop"="bakery"](around:${radius},${lat},${lng});
-      way["shop"="bakery"](around:${radius},${lat},${lng});
-      node["shop"="butcher"](around:${radius},${lat},${lng});
-      way["shop"="butcher"](around:${radius},${lat},${lng});
-      node["shop"="clothes"](around:${radius},${lat},${lng});
-      way["shop"="clothes"](around:${radius},${lat},${lng});
-      
-      // Finanzdienstleistungen
-      node["amenity"="bank"](around:${radius},${lat},${lng});
-      way["amenity"="bank"](around:${radius},${lat},${lng});
-      node["amenity"="atm"](around:${radius},${lat},${lng});
-      
-      // Sicherheit & Notfall
-      node["amenity"="police"](around:${radius},${lat},${lng});
-      way["amenity"="police"](around:${radius},${lat},${lng});
-      node["amenity"="fire_station"](around:${radius},${lat},${lng});
-      way["amenity"="fire_station"](around:${radius},${lat},${lng});
-      
-      // Dienstleistungen
-      node["amenity"="post_office"](around:${radius},${lat},${lng});
-      way["amenity"="post_office"](around:${radius},${lat},${lng});
-      node["amenity"="fuel"](around:${radius},${lat},${lng});
-      way["amenity"="fuel"](around:${radius},${lat},${lng});
-      
-      // Bildung (erweitert)
-      node["amenity"="university"](around:${radius},${lat},${lng});
-      way["amenity"="university"](around:${radius},${lat},${lng});
-      node["amenity"="college"](around:${radius},${lat},${lng});
-      way["amenity"="college"](around:${radius},${lat},${lng});
-    );
-    out geom;
-  `
+  // Definiere die Suchkategorien mit ihren OpenStreetMap-Tags
+  const searchCategories = {
+    kindergarten: ['kindergarten'],
+    schools: ['school'],
+    supermarkets: ['supermarket', 'convenience', 'grocery', 'discount'],
+    doctors: ['doctors', 'hospital', 'clinic'],
+    pharmacies: ['pharmacy'],
+    culture: ['cinema', 'museum', 'theatre', 'library'],
+    sports: ['swimming_pool', 'fitness_centre', 'sports_centre', 'stadium'],
+    parks: ['park', 'playground', 'garden'],
+    transport: ['bus_stop', 'station', 'tram_stop', 'subway_entrance'],
+    restaurants: ['restaurant', 'cafe', 'fast_food', 'bar', 'pub', 'ice_cream'],
+    shopping: ['bakery', 'butcher', 'clothes', 'mall', 'department_store'],
+    finance: ['bank', 'atm'],
+    safety: ['police', 'fire_station'],
+    services: ['post_office', 'fuel'],
+    education: ['university', 'college']
+  }
+
+  // Initialisiere die Ergebnisse
+  const amenityCounts = {
+    kindergarten: 0,
+    school: 0,
+    supermarket: 0,
+    doctors: 0,
+    hospital: 0,
+    pharmacy: 0,
+    culture: 0,
+    sports: 0,
+    parks: 0,
+    transport: 0,
+    restaurants: 0,
+    shopping: 0,
+    finance: 0,
+    safety: 0,
+    services: 0,
+    education: 0
+  }
+
+  const amenityDetails = {
+    kindergartens: [] as Array<{lat: number, lng: number, name: string}>,
+    schools: [] as Array<{lat: number, lng: number, name: string}>,
+    supermarkets: [] as Array<{lat: number, lng: number, name: string}>,
+    doctors: [] as Array<{lat: number, lng: number, name: string}>,
+    pharmacies: [] as Array<{lat: number, lng: number, name: string}>,
+    culture: [] as Array<{lat: number, lng: number, name: string, type: string}>,
+    sports: [] as Array<{lat: number, lng: number, name: string, type: string}>,
+    parks: [] as Array<{lat: number, lng: number, name: string}>,
+    transport: [] as Array<{lat: number, lng: number, name: string, type: string}>,
+    restaurants: [] as Array<{lat: number, lng: number, name: string, type: string}>,
+    shopping: [] as Array<{lat: number, lng: number, name: string, type: string}>,
+    finance: [] as Array<{lat: number, lng: number, name: string, type: string}>,
+    safety: [] as Array<{lat: number, lng: number, name: string, type: string}>,
+    services: [] as Array<{lat: number, lng: number, name: string, type: string}>,
+    education: [] as Array<{lat: number, lng: number, name: string, type: string}>
+  }
 
   try {
+    // Erweiterte Overpass-Abfrage mit verbesserter Syntax
+    const overpassQuery = `
+      [out:json][timeout:30];
+      (
+        // Restaurants mit allen Varianten
+        nwr["amenity"~"^(restaurant|cafe|fast_food|bar|pub|ice_cream)$"](around:${radius},${lat},${lng});
+        
+        // Schulen mit erweiterten Kriterien
+        nwr["amenity"="school"](around:${radius},${lat},${lng});
+        nwr["amenity"="kindergarten"](around:${radius},${lat},${lng});
+        nwr["building"="school"](around:${radius},${lat},${lng});
+        
+        // Supermärkte und Geschäfte
+        nwr["shop"~"^(supermarket|convenience|grocery|discount)$"](around:${radius},${lat},${lng});
+        
+        // Gesundheitswesen
+        nwr["amenity"~"^(doctors|hospital|clinic|pharmacy)$"](around:${radius},${lat},${lng});
+        nwr["healthcare"](around:${radius},${lat},${lng});
+        
+        // Kultur und Freizeit
+        nwr["amenity"~"^(cinema|theatre|library)$"](around:${radius},${lat},${lng});
+        nwr["tourism"="museum"](around:${radius},${lat},${lng});
+        nwr["leisure"~"^(swimming_pool|fitness_centre|sports_centre|stadium)$"](around:${radius},${lat},${lng});
+        
+        // Parks und Grünflächen
+        nwr["leisure"~"^(park|playground|garden)$"](around:${radius},${lat},${lng});
+        nwr["landuse"="recreation_ground"](around:${radius},${lat},${lng});
+        
+        // Öffentlicher Verkehr
+        nwr["highway"="bus_stop"](around:${radius},${lat},${lng});
+        nwr["railway"~"^(station|tram_stop|subway_entrance)$"](around:${radius},${lat},${lng});
+        nwr["public_transport"](around:${radius},${lat},${lng});
+        
+        // Shopping
+        nwr["shop"~"^(bakery|butcher|clothes|mall|department_store)$"](around:${radius},${lat},${lng});
+        
+        // Finanzdienstleistungen
+        nwr["amenity"~"^(bank|atm)$"](around:${radius},${lat},${lng});
+        
+        // Sicherheit
+        nwr["amenity"~"^(police|fire_station)$"](around:${radius},${lat},${lng});
+        
+        // Services
+        nwr["amenity"~"^(post_office|fuel)$"](around:${radius},${lat},${lng});
+        
+        // Bildung
+        nwr["amenity"~"^(university|college)$"](around:${radius},${lat},${lng});
+      );
+      out center meta;
+    `
+
+    console.log('Sending Overpass query for:', { lat, lng, radius })
+    
     const response = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'LebensqualitaetsKarte/1.0'
       },
       body: `data=${encodeURIComponent(overpassQuery)}`,
     })
 
+    if (!response.ok) {
+      throw new Error(`Overpass API error: ${response.status}`)
+    }
+
     const data = await response.json()
+    console.log('Overpass response elements:', data.elements?.length || 0)
     
-    // Count amenities by type and collect their details
-    const amenityCounts = {
-      kindergarten: 0,
-      school: 0,
-      supermarket: 0,
-      doctors: 0,
-      hospital: 0,
-      pharmacy: 0,
-      culture: 0,
-      sports: 0,
-      parks: 0,
-      transport: 0,
-      restaurants: 0,
-      shopping: 0,
-      finance: 0,
-      safety: 0,
-      services: 0,
-      education: 0
-    }
-
-    const amenityDetails = {
-      kindergartens: [] as Array<{lat: number, lng: number, name: string}>,
-      schools: [] as Array<{lat: number, lng: number, name: string}>,
-      supermarkets: [] as Array<{lat: number, lng: number, name: string}>,
-      doctors: [] as Array<{lat: number, lng: number, name: string}>,
-      pharmacies: [] as Array<{lat: number, lng: number, name: string}>,
-      culture: [] as Array<{lat: number, lng: number, name: string, type: string}>,
-      sports: [] as Array<{lat: number, lng: number, name: string, type: string}>,
-      parks: [] as Array<{lat: number, lng: number, name: string}>,
-      transport: [] as Array<{lat: number, lng: number, name: string, type: string}>,
-      restaurants: [] as Array<{lat: number, lng: number, name: string, type: string}>,
-      shopping: [] as Array<{lat: number, lng: number, name: string, type: string}>,
-      finance: [] as Array<{lat: number, lng: number, name: string, type: string}>,
-      safety: [] as Array<{lat: number, lng: number, name: string, type: string}>,
-      services: [] as Array<{lat: number, lng: number, name: string, type: string}>,
-      education: [] as Array<{lat: number, lng: number, name: string, type: string}>
-    }
-
+    // Verarbeite die Ergebnisse
     data.elements?.forEach((element: any) => {
-      const lat = element.lat || (element.center ? element.center.lat : null)
-      const lng = element.lon || (element.center ? element.center.lon : null)
-      const name = element.tags?.name || 'Unbekannt'
+      const elementLat = element.lat || (element.center ? element.center.lat : null)
+      const elementLng = element.lon || (element.center ? element.center.lon : null)
+      const name = element.tags?.name || element.tags?.brand || 'Unbekannt'
       
-      if (!lat || !lng) return
+      if (!elementLat || !elementLng) return
 
-      if (element.tags?.amenity === 'kindergarten') {
+      // Überprüfe Entfernung zum Suchpunkt
+      const distance = calculateDistance(lat, lng, elementLat, elementLng)
+      if (distance > radius) return
+
+      const tags = element.tags || {}
+
+      // Kategorisierung basierend auf Tags
+      if (tags.amenity === 'kindergarten') {
         amenityCounts.kindergarten++
-        amenityDetails.kindergartens.push({ lat, lng, name })
+        amenityDetails.kindergartens.push({ lat: elementLat, lng: elementLng, name })
       }
-      if (element.tags?.amenity === 'school') {
+      
+      if (tags.amenity === 'school' || tags.building === 'school') {
         amenityCounts.school++
-        amenityDetails.schools.push({ lat, lng, name })
+        amenityDetails.schools.push({ lat: elementLat, lng: elementLng, name })
       }
-      if (element.tags?.shop === 'supermarket' || element.tags?.shop === 'convenience' || 
-          element.tags?.shop === 'grocery' || element.tags?.shop === 'discount') {
+      
+      if (['supermarket', 'convenience', 'grocery', 'discount'].includes(tags.shop)) {
         amenityCounts.supermarket++
-        amenityDetails.supermarkets.push({ lat, lng, name })
+        amenityDetails.supermarkets.push({ lat: elementLat, lng: elementLng, name })
       }
-      if (element.tags?.amenity === 'doctors' || element.tags?.amenity === 'hospital') {
-        if (element.tags?.amenity === 'doctors') amenityCounts.doctors++
-        if (element.tags?.amenity === 'hospital') amenityCounts.hospital++
-        amenityDetails.doctors.push({ lat, lng, name })
+      
+      if (['doctors', 'hospital', 'clinic'].includes(tags.amenity) || tags.healthcare) {
+        amenityCounts.doctors++
+        amenityDetails.doctors.push({ lat: elementLat, lng: elementLng, name })
       }
-      if (element.tags?.amenity === 'pharmacy') {
+      
+      if (tags.amenity === 'pharmacy') {
         amenityCounts.pharmacy++
-        amenityDetails.pharmacies.push({ lat, lng, name })
+        amenityDetails.pharmacies.push({ lat: elementLat, lng: elementLng, name })
       }
       
-      // Culture & Entertainment
-      if (element.tags?.amenity === 'cinema' || element.tags?.tourism === 'museum' || 
-          element.tags?.amenity === 'theatre' || element.tags?.amenity === 'library') {
+      if (['cinema', 'theatre', 'library'].includes(tags.amenity) || tags.tourism === 'museum') {
         amenityCounts.culture++
-        const type = element.tags?.amenity || element.tags?.tourism || 'culture'
-        amenityDetails.culture.push({ lat, lng, name, type })
+        const type = tags.amenity || tags.tourism || 'culture'
+        amenityDetails.culture.push({ lat: elementLat, lng: elementLng, name, type })
       }
       
-      // Sports & Wellness
-      if (element.tags?.leisure === 'swimming_pool' || element.tags?.leisure === 'fitness_centre' || 
-          element.tags?.leisure === 'sports_centre') {
+      if (['swimming_pool', 'fitness_centre', 'sports_centre', 'stadium'].includes(tags.leisure)) {
         amenityCounts.sports++
-        amenityDetails.sports.push({ lat, lng, name, type: element.tags.leisure })
+        amenityDetails.sports.push({ lat: elementLat, lng: elementLng, name, type: tags.leisure })
       }
       
-      // Parks & Nature
-      if (element.tags?.leisure === 'park' || element.tags?.leisure === 'playground') {
+      if (['park', 'playground', 'garden'].includes(tags.leisure) || tags.landuse === 'recreation_ground') {
         amenityCounts.parks++
-        amenityDetails.parks.push({ lat, lng, name })
+        amenityDetails.parks.push({ lat: elementLat, lng: elementLng, name })
       }
       
-      // Public Transport
-      if (element.tags?.highway === 'bus_stop' || element.tags?.railway === 'station' || 
-          element.tags?.railway === 'tram_stop') {
+      if (tags.highway === 'bus_stop' || ['station', 'tram_stop', 'subway_entrance'].includes(tags.railway) || tags.public_transport) {
         amenityCounts.transport++
-        const type = element.tags?.highway || element.tags?.railway || 'transport'
-        amenityDetails.transport.push({ lat, lng, name, type })
+        const type = tags.highway || tags.railway || tags.public_transport || 'transport'
+        amenityDetails.transport.push({ lat: elementLat, lng: elementLng, name, type })
       }
       
-      // Restaurants & Food
-      if (element.tags?.amenity === 'restaurant' || element.tags?.amenity === 'cafe' || 
-          element.tags?.amenity === 'fast_food') {
+      if (['restaurant', 'cafe', 'fast_food', 'bar', 'pub'].includes(tags.amenity)) {
         amenityCounts.restaurants++
-        const type = element.tags?.amenity || 'restaurant'
-        amenityDetails.restaurants.push({ lat, lng, name, type })
+        amenityDetails.restaurants.push({ lat: elementLat, lng: elementLng, name, type: tags.amenity })
       }
       
-      // Shopping
-      if (element.tags?.shop === 'bakery' || element.tags?.shop === 'butcher' || 
-          element.tags?.shop === 'clothes' || element.tags?.shop === 'convenience') {
+      if (['bakery', 'butcher', 'clothes', 'mall', 'department_store'].includes(tags.shop)) {
         amenityCounts.shopping++
-        const type = element.tags?.shop || 'shop'
-        amenityDetails.shopping.push({ lat, lng, name, type })
+        amenityDetails.shopping.push({ lat: elementLat, lng: elementLng, name, type: tags.shop })
       }
       
-      // Financial Services
-      if (element.tags?.amenity === 'bank' || element.tags?.amenity === 'atm') {
+      if (['bank', 'atm'].includes(tags.amenity)) {
         amenityCounts.finance++
-        const type = element.tags?.amenity || 'finance'
-        amenityDetails.finance.push({ lat, lng, name, type })
+        amenityDetails.finance.push({ lat: elementLat, lng: elementLng, name, type: tags.amenity })
       }
       
-      // Safety & Emergency
-      if (element.tags?.amenity === 'police' || element.tags?.amenity === 'fire_station') {
+      if (['police', 'fire_station'].includes(tags.amenity)) {
         amenityCounts.safety++
-        const type = element.tags?.amenity || 'safety'
-        amenityDetails.safety.push({ lat, lng, name, type })
+        amenityDetails.safety.push({ lat: elementLat, lng: elementLng, name, type: tags.amenity })
       }
       
-      // Services
-      if (element.tags?.amenity === 'post_office' || element.tags?.amenity === 'fuel') {
+      if (['post_office', 'fuel'].includes(tags.amenity)) {
         amenityCounts.services++
-        const type = element.tags?.amenity || 'service'
-        amenityDetails.services.push({ lat, lng, name, type })
+        amenityDetails.services.push({ lat: elementLat, lng: elementLng, name, type: tags.amenity })
       }
       
-      // Education (expanded)
-      if (element.tags?.amenity === 'university' || element.tags?.amenity === 'college') {
+      if (['university', 'college'].includes(tags.amenity)) {
         amenityCounts.education++
-        const type = element.tags?.amenity || 'education'
-        amenityDetails.education.push({ lat, lng, name, type })
+        amenityDetails.education.push({ lat: elementLat, lng: elementLng, name, type: tags.amenity })
       }
     })
+
+    console.log('Amenity counts before deduplication:', amenityCounts)
+    
+    // Duplikat-Filterung anwenden
+    amenityDetails.kindergartens = removeDuplicates(amenityDetails.kindergartens)
+    amenityDetails.schools = removeDuplicates(amenityDetails.schools)
+    amenityDetails.supermarkets = removeDuplicates(amenityDetails.supermarkets)
+    amenityDetails.doctors = removeDuplicates(amenityDetails.doctors)
+    amenityDetails.pharmacies = removeDuplicates(amenityDetails.pharmacies)
+    amenityDetails.culture = removeDuplicates(amenityDetails.culture)
+    amenityDetails.sports = removeDuplicates(amenityDetails.sports)
+    amenityDetails.parks = removeDuplicates(amenityDetails.parks)
+    amenityDetails.transport = removeDuplicates(amenityDetails.transport)
+    amenityDetails.restaurants = removeDuplicates(amenityDetails.restaurants)
+    amenityDetails.shopping = removeDuplicates(amenityDetails.shopping)
+    amenityDetails.finance = removeDuplicates(amenityDetails.finance)
+    amenityDetails.safety = removeDuplicates(amenityDetails.safety)
+    amenityDetails.services = removeDuplicates(amenityDetails.services)
+    amenityDetails.education = removeDuplicates(amenityDetails.education)
+
+    // Aktualisiere die Zähler basierend auf den gefilterten Daten
+    amenityCounts.kindergarten = amenityDetails.kindergartens.length
+    amenityCounts.school = amenityDetails.schools.length
+    amenityCounts.supermarket = amenityDetails.supermarkets.length
+    amenityCounts.doctors = amenityDetails.doctors.length
+    amenityCounts.pharmacy = amenityDetails.pharmacies.length
+    amenityCounts.culture = amenityDetails.culture.length
+    amenityCounts.sports = amenityDetails.sports.length
+    amenityCounts.parks = amenityDetails.parks.length
+    amenityCounts.transport = amenityDetails.transport.length
+    amenityCounts.restaurants = amenityDetails.restaurants.length
+    amenityCounts.shopping = amenityDetails.shopping.length
+    amenityCounts.finance = amenityDetails.finance.length
+    amenityCounts.safety = amenityDetails.safety.length
+    amenityCounts.services = amenityDetails.services.length
+    amenityCounts.education = amenityDetails.education.length
+
+    console.log('Amenity counts after deduplication:', amenityCounts)
 
     // Calculate scores (0-10 scale)
     const kindergartenScore = Math.min(10, Math.round(amenityCounts.kindergarten * 2))
