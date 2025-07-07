@@ -75,6 +75,7 @@ export default function Home() {
   const [recalculatingScore, setRecalculatingScore] = useState(false)
   const [qualityScore, setQualityScore] = useState<QualityScore | null>(null)
   const [error, setError] = useState('')
+  const [showEnviromentData, setShowEnviromentData] = useState(false)
   const [showHeatmap, setShowHeatmap] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
@@ -985,22 +986,23 @@ export default function Home() {
                   Ansichtsoptionen
                 </h3>
                 <div className="space-y-3">
-                  <label className={`flex items-center p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                  <label className={`flex items-center p-3 rounded-xl border transition-all duration-200 cursor-not-allowed opacity-50 ${
                     darkMode 
-                      ? 'border-slate-600 hover:border-emerald-500 hover:bg-slate-700/50' 
-                      : 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50'
+                      ? 'border-slate-600 bg-slate-700/30' 
+                      : 'border-gray-200 bg-gray-50'
                   }`}>
                     <input
                       type="checkbox"
                       checked={showHeatmap}
                       onChange={(e) => setShowHeatmap(e.target.checked)}
                       className="mr-3 text-emerald-500 focus:ring-emerald-400 rounded"
+                      disabled={!showEnviromentData}
                     />
                     <div className="flex items-center gap-2">
                       <span className="text-lg">🌡️</span>
                       <span className={`font-medium ${
-                        darkMode ? 'text-gray-200' : 'text-gray-700'
-                      }`}>Umweltdaten anzeigen</span>
+                        darkMode ? 'text-gray-400' : 'text-gray-500'
+                      }`}>Umweltdaten anzeigen (deaktiviert)</span>
                     </div>
                   </label>
                   <button
@@ -1286,7 +1288,7 @@ export default function Home() {
                   ))}
                   
                   {/* Lärmbelastung und Verkehr */}
-                  <div className={`rounded-xl border p-4 ${
+                  {showEnviromentData ? <div className={`rounded-xl border p-4 ${
                     darkMode 
                       ? 'bg-gradient-to-r from-red-900/50 to-orange-900/50 border-red-700' 
                       : 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200'
@@ -1321,7 +1323,7 @@ export default function Home() {
                         <span className="font-bold text-red-500 text-lg">{qualityScore.traffic}/10</span>
                       </div>
                     </div>
-                  </div>
+                  </div> : null}
                 </div>
               </div>
 
