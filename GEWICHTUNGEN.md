@@ -48,16 +48,16 @@ Freizeitangebote verbessern die Lebensqualität, sind aber nicht lebensnotwendig
 ### 🚌 Nahverkehr (Gewichtung: 1.0 - Neutral)
 Öffentliche Verkehrsmittel sind wichtig für Mobilität ohne Auto.
 
-- **ÖPNV** (1.3 - Sehr wichtig): Bus, Bahn, U-Bahn für tägliche Mobilität
+- **ÖPNV** (1.2 - Sehr wichtig): Bus, Bahn, U-Bahn für tägliche Mobilität
 
 ### 🛒 Alltag (Gewichtung: 1.0 - Neutral)
 Täglich benötigte Services und Einrichtungen.
 
 - **Supermärkte** (1.2 - Sehr wichtig): Grundversorgung mit Lebensmitteln
 - **Shopping** (0.8 - Unwichtig): Einzelhandel und Einkaufsmöglichkeiten
-- **Banken** (0.6 - Unwichtig): Finanzdienstleistungen
+- **Banken** (0.8 - Unwichtig): Finanzdienstleistungen
 - **Sicherheit** (1.1 - Wichtig): Polizei und Feuerwehr
-- **Services** (0.7 - Unwichtig): Post, Tankstellen
+- **Services** (0.8 - Unwichtig): Post, Tankstellen
 - **Friseur** (0.8 - Unwichtig): Persönliche Dienstleistungen
 
 > **Hinweis**: Kategorien können mit Gewichtung 0.0 komplett deaktiviert werden.

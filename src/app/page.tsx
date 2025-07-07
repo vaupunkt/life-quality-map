@@ -121,7 +121,7 @@ export default function Home() {
         { key: 'culture', label: 'Kultur', weight: 0.8, enabled: true },
         { key: 'sports', label: 'Sport', weight: 1.0, enabled: true },
         { key: 'parks', label: 'Parks', weight: 1.1, enabled: true },
-        { key: 'restaurants', label: 'Restaurants', weight: 0.7, enabled: true }
+        { key: 'restaurants', label: 'Restaurants', weight: 0.8, enabled: true }
       ],
       isOpen: true,
       enabled: true
@@ -132,7 +132,7 @@ export default function Home() {
       weight: 1.0,
       order: 4,
       categories: [
-        { key: 'transport', label: 'ÖPNV', weight: 1.3, enabled: true }
+        { key: 'transport', label: 'ÖPNV', weight: 1.2, enabled: true }
       ],
       isOpen: true,
       enabled: true
@@ -145,9 +145,9 @@ export default function Home() {
       categories: [
         { key: 'supermarkets', label: 'Supermärkte', weight: 1.2, enabled: true },
         { key: 'shopping', label: 'Shopping', weight: 0.8, enabled: true },
-        { key: 'finance', label: 'Banken', weight: 0.6, enabled: true },
+        { key: 'finance', label: 'Banken', weight: 0.8, enabled: true },
         { key: 'safety', label: 'Sicherheit', weight: 1.1, enabled: true },
-        { key: 'services', label: 'Services', weight: 0.7, enabled: true },
+        { key: 'services', label: 'Services', weight: 0.8, enabled: true },
         { key: 'hairdresser', label: 'Friseur', weight: 0.8, enabled: true }
       ],
       isOpen: true,
