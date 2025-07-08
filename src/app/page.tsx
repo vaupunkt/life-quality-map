@@ -5,7 +5,6 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import SettingsModal from '@/components/SettingsModal'
 import InfoModal from '@/components/InfoModal'
-import Tooltip from '@/components/Tooltip'
 
 // Dynamically import the Map component to avoid SSR issues
 const Map = dynamic(() => import('@/components/MapWrapper'), {
@@ -1496,40 +1495,28 @@ function HomeContent() {
               Lebensqualitäts-Karte
             </h1>
             <div className="flex gap-2">
-              <Tooltip 
-                content="Informationen über das Bewertungssystem und häufige Fragen" 
-                darkMode={darkMode}
-                position="bottom"
+              <button
+                onClick={() => setShowInfo(true)}
+                className={`p-2 rounded-xl transition-all duration-200 hover:scale-110 ${
+                  darkMode 
+                    ? 'bg-slate-700 hover:bg-slate-600 text-blue-400' 
+                    : 'bg-white/80 hover:bg-white text-blue-600 hover:text-blue-700'
+                } shadow-lg`}
+                aria-label="Informationen anzeigen"
               >
-                <button
-                  onClick={() => setShowInfo(true)}
-                  className={`p-2 rounded-xl transition-all duration-200 hover:scale-110 ${
-                    darkMode 
-                      ? 'bg-slate-700 hover:bg-slate-600 text-blue-400' 
-                      : 'bg-white/80 hover:bg-white text-blue-600 hover:text-blue-700'
-                  } shadow-lg`}
-                  aria-label="Informationen anzeigen"
-                >
-                  <span className="text-xl">ℹ️</span>
-                </button>
-              </Tooltip>
-              <Tooltip 
-                content={darkMode ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'} 
-                darkMode={darkMode}
-                position="bottom"
+                <span className="text-xl">ℹ️</span>
+              </button>
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-2 rounded-xl transition-all duration-200 hover:scale-110 ${
+                  darkMode 
+                    ? 'bg-slate-700 hover:bg-slate-600 text-yellow-400' 
+                    : 'bg-white/80 hover:bg-white text-gray-600 hover:text-yellow-500'
+                } shadow-lg`}
+                aria-label={darkMode ? 'Light Mode' : 'Dark Mode'}
               >
-                <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  className={`p-2 rounded-xl transition-all duration-200 hover:scale-110 ${
-                    darkMode 
-                      ? 'bg-slate-700 hover:bg-slate-600 text-yellow-400' 
-                      : 'bg-white/80 hover:bg-white text-gray-600 hover:text-yellow-500'
-                  } shadow-lg`}
-                  aria-label={darkMode ? 'Light Mode' : 'Dark Mode'}
-                >
-                  <span className="text-xl">{darkMode ? '☀️' : '🌙'}</span>
-                </button>
-              </Tooltip>
+                <span className="text-xl">{darkMode ? '☀️' : '🌙'}</span>
+              </button>
             </div>
           </div>
           <p className={`text-sm sm:text-base max-w-2xl mx-auto ${
@@ -1555,77 +1542,69 @@ function HomeContent() {
             </div>
             <form onSubmit={handleAddressSubmit} className="flex flex-col sm:flex-row gap-3 sm:gap-2">
               <div className="flex-1 min-w-0 w-full">
-                <Tooltip content="Geben Sie eine Adresse oder einen Ort ein (z.B. 'Alexanderplatz, Berlin' oder 'München Marienplatz') oder klicken Sie auf die Karte." darkMode={darkMode} className="block w-full">
-                  <div className="relative w-full">
-                    <input
-                      type="text"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="z.B. Alexanderplatz, Berlin oder klicke auf die Karte"
-                      className={`w-full px-6 py-4 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-lg ${
+                <div className="relative w-full">
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="z.B. Alexanderplatz, Berlin oder klicke auf die Karte"
+                    className={`w-full px-6 py-4 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-lg ${
+                      darkMode 
+                        ? 'bg-slate-700/80 border-slate-600 text-white placeholder-gray-400' 
+                        : 'bg-white/80 border-gray-200 text-gray-900 placeholder-gray-400'
+                    }`}
+                  />
+                  {address && (
+                    <button
+                      type="button"
+                      onClick={() => setAddress('')}
+                      className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 hover:scale-110 ${
                         darkMode 
-                          ? 'bg-slate-700/80 border-slate-600 text-white placeholder-gray-400' 
-                          : 'bg-white/80 border-gray-200 text-gray-900 placeholder-gray-400'
+                          ? 'text-gray-400 hover:text-gray-200 hover:bg-slate-600' 
+                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                       }`}
-                    />
-                    {address && (
-                      <Tooltip content="Eingabefeld leeren" darkMode={darkMode}>
-                        <button
-                          type="button"
-                          onClick={() => setAddress('')}
-                          className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 hover:scale-110 ${
-                            darkMode 
-                              ? 'text-gray-400 hover:text-gray-200 hover:bg-slate-600' 
-                              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                          }`}
-                          aria-label="Eingabe löschen"
-                        >
-                          <span className="text-lg">✕</span>
-                        </button>
-                      </Tooltip>
-                    )}
-                  </div>
-                </Tooltip>
+                      aria-label="Eingabe löschen"
+                    >
+                      <span className="text-lg">✕</span>
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="flex gap-2 flex-shrink-0">
-                <Tooltip content="Verwendet die GPS-Funktion Ihres Geräts, um Ihren aktuellen Standort zu ermitteln." darkMode={darkMode}>
-                  <button
-                    type="button"
-                    onClick={handleCurrentLocation}
-                    disabled={loading}
-                    className={`px-4 py-4 rounded-xl border transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                      darkMode 
-                        ? 'bg-slate-700/80 border-slate-600 text-gray-200 hover:bg-slate-600/80' 
-                        : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-gray-50'
-                    }`}
-                    title="Meinen aktuellen Standort verwenden"
-                  >
-                    {loading ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-500"></div>
-                    ) : (
-                      <span className="text-xl">📍</span>
-                    )}
-                  </button>
-                </Tooltip>
-                <Tooltip content="Analysiert die eingegebene Adresse und berechnet die Lebensqualitäts-Bewertung basierend auf nahegelegenen Einrichtungen." darkMode={darkMode}>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-4 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-xl hover:from-emerald-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none text-lg"
-                  >
-                    {loading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span>Laden...</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span>🔍</span>
-                        <span>Bewerten</span>
-                      </div>
-                    )}
-                  </button>
-                </Tooltip>
+                <button
+                  type="button"
+                  onClick={handleCurrentLocation}
+                  disabled={loading}
+                  className={`px-4 py-4 rounded-xl border transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed ${
+                    darkMode 
+                      ? 'bg-slate-700/80 border-slate-600 text-gray-200 hover:bg-slate-600/80' 
+                      : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                  title="Meinen aktuellen Standort verwenden"
+                >
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-500"></div>
+                  ) : (
+                    <span className="text-xl">📍</span>
+                  )}
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-4 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-xl hover:from-emerald-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none text-lg"
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-4 border-white"></div>
+                      <span>Laden...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span>🔍</span>
+                      <span>Bewerten</span>
+                    </div>
+                  )}
+                </button>
               </div>
             </form>
             
@@ -1663,32 +1642,31 @@ function HomeContent() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
               {Object.entries(weightingPresets).map(([key, preset]) => (
-                <Tooltip key={key} content={`${preset.name}: ${preset.description}. Klicken um diese Gewichtungsvorlage zu aktivieren.`}>
-                  <button
-                    onClick={() => applyPreset(key)}
-                    className={`p-4 rounded-xl border transition-all duration-200 text-left hover:scale-105 ${
-                      selectedPreset === key
-                        ? darkMode 
-                          ? 'bg-emerald-900/50 border-emerald-500 text-emerald-300' 
-                          : 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                        : darkMode 
-                          ? 'bg-slate-700/50 border-slate-600 text-gray-200 hover:border-emerald-500 hover:bg-slate-700/80' 
-                          : 'bg-white/80 border-gray-200 text-gray-700 hover:border-emerald-300 hover:bg-emerald-50/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl">{preset.icon}</span>
-                      <span className="font-medium text-sm">{preset.name}</span>
-                    </div>
-                    <p className={`text-xs ${
-                      selectedPreset === key
-                        ? darkMode ? 'text-emerald-400' : 'text-emerald-600'
-                        : darkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      {preset.description}
-                    </p>
-                  </button>
-                </Tooltip>
+                <button
+                  key={key} // Added missing key prop
+                  onClick={() => applyPreset(key)}
+                  className={`p-4 rounded-xl border transition-all duration-200 text-left hover:scale-105 ${
+                    selectedPreset === key
+                      ? darkMode 
+                        ? 'bg-emerald-900/50 border-emerald-500 text-emerald-300' 
+                        : 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                      : darkMode 
+                        ? 'bg-slate-700/50 border-slate-600 text-gray-200 hover:border-emerald-500 hover:bg-slate-700/80' 
+                        : 'bg-white/80 border-gray-200 text-gray-700 hover:border-emerald-300 hover:bg-emerald-50/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">{preset.icon}</span>
+                    <span className="font-medium text-sm">{preset.name}</span>
+                  </div>
+                  <p className={`text-xs ${
+                    selectedPreset === key
+                      ? darkMode ? 'text-emerald-400' : 'text-emerald-600'
+                      : darkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    {preset.description}
+                  </p>
+                </button>
               ))}
               
               {/* Benutzerdefinierte Gewichtungen Anzeige */}
@@ -1885,17 +1863,15 @@ function HomeContent() {
                   
                   {/* Große Gesamtbewertung mit Farbverlauf */}
                   <div className="text-center mb-6">
-                    <Tooltip content="Die Gesamtbewertung von 0-10 basiert auf allen aktivierten Kategorien und deren Gewichtungen. Klicken Sie auf das Info-Symbol für Details zum Bewertungssystem.">
-                      <div className={`inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br ${getScoreColor(qualityScore.overall)} shadow-2xl mb-4 cursor-help`}>
-                        <div className={`text-4xl font-bold ${getScoreTextColor(qualityScore.overall)}`}>
-                          {recalculatingScore ? (
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-white"></div>
-                          ) : (
-                            qualityScore.overall
-                          )}
-                        </div>
+                    <div className={`inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br ${getScoreColor(qualityScore.overall)} shadow-2xl mb-4`}>
+                      <div className={`text-4xl font-bold ${getScoreTextColor(qualityScore.overall)}`}>
+                        {recalculatingScore ? (
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-white"></div>
+                        ) : (
+                          qualityScore.overall
+                        )}
                       </div>
-                    </Tooltip>
+                    </div>
                     <div className={`text-lg font-medium mb-2 ${
                       darkMode ? 'text-gray-200' : 'text-gray-600'
                     }`}>
@@ -1939,21 +1915,20 @@ function HomeContent() {
                     
                     {/* Share & Copy Buttons */}
                     <div className="mt-6 flex flex-row gap-2 justify-center">
-                      <Tooltip content="Kopiere die URL dieser Analyse in die Zwischenablage zum einfachen Teilen" darkMode={darkMode}>
-                        <button
-                          onClick={handleCopyURL}
-                          className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
-                            darkMode 
-                              ? 'bg-gradient-to-r from-slate-600 to-gray-600 hover:from-slate-700 hover:to-gray-700 text-white border border-slate-500' 
-                              : 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 border border-gray-300'
-                          }`}
-                        >
-                          <span className="text-xl">🔗</span>
-                          <span>URL kopieren</span>
-                        </button>
-                      </Tooltip>
+                      <button
+                        onClick={handleCopyURL}
+                        className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
+                          darkMode 
+                            ? 'bg-gradient-to-r from-slate-600 to-gray-600 hover:from-slate-700 hover:to-gray-700 text-white border border-slate-500' 
+                            : 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 border border-gray-300'
+                        }`}
+                        title="Kopiere die URL dieser Analyse in die Zwischenablage zum einfachen Teilen"
+                      >
+                        <span className="text-xl">🔗</span>
+                        <span>URL kopieren</span>
+                      </button>
                       
-                      {isMobile ? <Tooltip content={isMobile ? "Teile deine Lebensqualitäts-Analyse mit anderen Apps" : "Teile deine Lebensqualitäts-Analyse als Bild mit Freunden und Familie"} darkMode={darkMode}>
+                      {isMobile ? 
                         <button
                           onClick={handleShare}
                           className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
@@ -1961,11 +1936,12 @@ function HomeContent() {
                               ? 'bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white' 
                               : 'bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white'
                           }`}
+                          title="Teile deine Lebensqualitäts-Analyse mit anderen Apps"
                         >
                           <span className="text-xl">{isMobile ? '📱' : '🖼️'}</span>
                           <span>{isMobile ? 'Teilen' : 'Als Bild teilen'}</span>
                         </button>
-                      </Tooltip> : null}
+                      : null}
                       
                       {/* Download Button nur auf mobilen Geräten */}
                       
@@ -1996,33 +1972,29 @@ function HomeContent() {
                             onChange={() => toggleGroupVisibility(groupKey)}
                             className="w-5 h-5 text-emerald-500 focus:ring-emerald-400 rounded"
                           />
-                          <Tooltip content={`${group.title}-Gruppe: ${group.enabled ? 'Aktiviert' : 'Deaktiviert'} mit Gewichtung ${group.weight}. Klicken Sie auf das Häkchen, um die Gruppe zu aktivieren/deaktivieren.`}>
-                            <div 
-                              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => toggleGroupVisibility(groupKey)}
-                            >
-                              <span className="text-2xl">{group.icon}</span>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className={`font-bold text-lg ${
-                                    darkMode ? 'text-gray-200' : 'text-gray-800'
-                                  }`}>{group.title}</span>
-                                  {qualityScore && (
-                                    <Tooltip content={`Durchschnittlicher Score für die ${group.title}-Kategorie: ${getGroupScore(groupKey)}/10`}>
-                                      <div className={`px-2 py-1 rounded-full bg-gradient-to-r ${getScoreColor(getGroupScore(groupKey))} ${getScoreTextColor(getGroupScore(groupKey))} font-bold text-xs cursor-help`}>
-                                        {getGroupScore(groupKey)}/10
-                                      </div>
-                                    </Tooltip>
-                                  )}
-                                </div>
-                                <div className={`text-sm ${
-                                  darkMode ? 'text-gray-400' : 'text-gray-500'
-                                }`}>
-                                  {getWeightLabel(group.weight)}
-                                </div>
+                          <div 
+                            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => toggleGroupVisibility(groupKey)}
+                          >
+                            <span className="text-2xl">{group.icon}</span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className={`font-bold text-lg ${
+                                  darkMode ? 'text-gray-200' : 'text-gray-800'
+                                }`}>{group.title}</span>
+                                {qualityScore && (
+                                  <div className={`px-2 py-1 rounded-full bg-gradient-to-r ${getScoreColor(getGroupScore(groupKey))} ${getScoreTextColor(getGroupScore(groupKey))} font-bold text-xs cursor-help`}>
+                                    {getGroupScore(groupKey)}/10
+                                  </div>
+                                )}
+                              </div>
+                              <div className={`text-sm ${
+                                darkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                {getWeightLabel(group.weight)}
                               </div>
                             </div>
-                          </Tooltip>
+                          </div>
                         </div>
                         <button
                           onClick={() => toggleGroup(groupKey)}
@@ -2095,25 +2067,21 @@ function HomeContent() {
                                       onChange={() => toggleCategoryVisibility(groupKey, category.key)}
                                       className="w-4 h-4 text-emerald-500 focus:ring-emerald-400 rounded"
                                     />
-                                    <Tooltip content={`${category.label}: ${getCategoryExamples(category.key)}. ${category.enabled && group.enabled ? 'Aktiviert' : 'Deaktiviert'} mit Gewichtung ${category.weight}.`}>
-                                      <div 
-                                        className={`flex items-center gap-3 flex-1 ${!group.enabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                                        onClick={() => group.enabled && toggleCategoryVisibility(groupKey, category.key)}
-                                      >
-                                        <div className={`w-4 h-4 rounded-full ${getCategoryColor(category.key)}`}></div>
-                                        <span className={`text-sm font-medium flex-1 ${
-                                          darkMode ? 'text-gray-200' : 'text-gray-700'
-                                        }`}>{category.label}</span>
-                                      </div>
-                                    </Tooltip>
+                                    <div 
+                                      className={`flex items-center gap-3 flex-1 ${!group.enabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                                      onClick={() => group.enabled && toggleCategoryVisibility(groupKey, category.key)}
+                                    >
+                                      <div className={`w-4 h-4 rounded-full ${getCategoryColor(category.key)}`}></div>
+                                      <span className={`text-sm font-medium flex-1 ${
+                                        darkMode ? 'text-gray-200' : 'text-gray-700'
+                                      }`}>{category.label}</span>
+                                    </div>
                                   </div>
                                   <div className="flex items-center gap-3">
                                     {/* Farbiger Score-Badge */}
-                                    <Tooltip content={`${category.label}: ${getCategoryExamples(category.key)}. Score: ${score}/10 basierend auf ${amenityCount} gefundenen Einrichtungen.`}>
-                                      <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getScoreColor(score)} ${getScoreTextColor(score)} font-bold text-sm min-w-[50px] text-center cursor-help`}>
-                                        {score}/10
-                                      </div>
-                                    </Tooltip>
+                                    <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getScoreColor(score)} ${getScoreTextColor(score)} font-bold text-sm min-w-[50px] text-center cursor-help`}>
+                                      {score}/10
+                                    </div>
                                     <div className="text-right">
                                       <div className={`text-xs ${
                                         darkMode ? 'text-gray-400' : 'text-gray-500'
@@ -2342,8 +2310,8 @@ function HomeContent() {
                   {/* Info-Box für Benutzer */}
                   <div className={`mt-6 p-4 rounded-xl border ${
                     darkMode 
-                      ? 'bg-gradient-to-r from-blue-900/50 to-emerald-900/50 border-blue-700 text-blue-300' 
-                      : 'bg-gradient-to-r from-blue-50 to-emerald-50 border-blue-200 text-blue-700'
+                      ? 'bg-gradient-to-r from-blue-900/50 to-green-900/50 border-blue-700 text-blue-300' 
+                      : 'bg-gradient-to-r from-blue-50 to-green-50 border-blue-200 text-blue-700'
                   }`}>
                     <h4 className={`font-bold mb-3 flex items-center gap-2 ${
                       darkMode ? 'text-blue-200' : 'text-blue-800'

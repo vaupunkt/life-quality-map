@@ -195,7 +195,8 @@ export default function Map({
         onLocationClick(e.latlng.lat, e.latlng.lng)
       }
     })
-  }, [onLocationClick]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [onLocationClick]) // Added onLocationClick to dependencies to fix the warning
+
   const generateHeatmapData = (centerLat: number, centerLng: number) => {
     const heatmapData = []
     const gridSize = 0.005 // Approximately 500m spacing
