@@ -18,6 +18,7 @@ yarn-error.log*
 # IDE
 .vscode/
 .idea/
+.github/
 
 # OS
 .DS_Store
@@ -29,5 +30,3 @@ Thumbs.db
 
 # Build files
 *.tsbuildinfo
-.vscode
-.github
