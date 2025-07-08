@@ -165,16 +165,18 @@ async function calculateQualityScore(
     supermarkets: ['supermarket', 'convenience', 'grocery', 'discount'],
     doctors: ['doctors', 'hospital', 'clinic'],
     pharmacies: ['pharmacy'],
-    culture: ['cinema', 'museum', 'theatre', 'library'],
+    culture: ['cinema', 'museum', 'theatre', 'library', 'gallery', 'art_gallery', 'exhibition_centre'],
     sports: ['swimming_pool', 'fitness_centre', 'sports_centre', 'stadium'],
     parks: ['park', 'playground', 'garden'],
     transport: ['bus_stop', 'station', 'tram_stop', 'subway_entrance'],
+    cycling: ['bicycle_rental', 'bicycle_repair_station', 'cycleway', 'bicycle_parking', 'bike_lane', 'bicycle_road', 'designated_path'],
     restaurants: ['restaurant', 'cafe', 'fast_food', 'bar', 'pub', 'ice_cream'],
     shopping: ['bakery', 'butcher', 'clothes', 'mall', 'department_store'],
     finance: ['bank', 'atm'],
     safety: ['police', 'fire_station'],
-    services: ['post_office', 'fuel', 'hairdresser'],
-    education: ['university', 'college']
+    services: ['post_office', 'fuel'],
+    education: ['university', 'college'],
+    hairdresser: ['hairdresser', 'beauty']
   }
 
   // Initialisiere die Ergebnisse
@@ -189,6 +191,7 @@ async function calculateQualityScore(
     sports: 0,
     parks: 0,
     transport: 0,
+    cycling: 0,
     restaurants: 0,
     shopping: 0,
     finance: 0,
@@ -208,13 +211,14 @@ async function calculateQualityScore(
     sports: [] as Array<{lat: number, lng: number, name: string, type: string}>,
     parks: [] as Array<{lat: number, lng: number, name: string}>,
     transport: [] as Array<{lat: number, lng: number, name: string, type: string}>,
+    cycling: [] as Array<{lat: number, lng: number, name: string, type: string}>,
     restaurants: [] as Array<{lat: number, lng: number, name: string, type: string}>,
     shopping: [] as Array<{lat: number, lng: number, name: string, type: string}>,
     finance: [] as Array<{lat: number, lng: number, name: string, type: string}>,
     safety: [] as Array<{lat: number, lng: number, name: string, type: string}>,
     services: [] as Array<{lat: number, lng: number, name: string, type: string}>,
     education: [] as Array<{lat: number, lng: number, name: string, type: string}>,
-    hairdresser: [] as Array<{lat: number, lng: number, name: string}>
+    hairdresser: [] as Array<{lat: number, lng: number, name: string, type: string}>
   }
 
   try {
@@ -237,9 +241,9 @@ async function calculateQualityScore(
         nwr["amenity"~"^(doctors|hospital|clinic|pharmacy)$"](around:${radius},${lat},${lng});
         nwr["healthcare"](around:${radius},${lat},${lng});
         
-        // Kultur und Freizeit
-        nwr["amenity"~"^(cinema|theatre|library)$"](around:${radius},${lat},${lng});
-        nwr["tourism"="museum"](around:${radius},${lat},${lng});
+        // Kultur und Freizeit (inkl. Galerien)
+        nwr["amenity"~"^(cinema|theatre|library|art_gallery)$"](around:${radius},${lat},${lng});
+        nwr["tourism"~"^(museum|gallery|art_gallery|exhibition_centre)$"](around:${radius},${lat},${lng});
         nwr["leisure"~"^(swimming_pool|fitness_centre|sports_centre|stadium)$"](around:${radius},${lat},${lng});
         
         // Parks und Grünflächen
@@ -250,6 +254,18 @@ async function calculateQualityScore(
         nwr["highway"="bus_stop"](around:${radius},${lat},${lng});
         nwr["railway"~"^(station|tram_stop|subway_entrance)$"](around:${radius},${lat},${lng});
         nwr["public_transport"](around:${radius},${lat},${lng});
+        
+        // Fahrradinfrastruktur (erweitert)
+        nwr["highway"="cycleway"](around:${radius},${lat},${lng});
+        nwr["cycleway"](around:${radius},${lat},${lng});
+        nwr["cycleway:left"](around:${radius},${lat},${lng});
+        nwr["cycleway:right"](around:${radius},${lat},${lng});
+        nwr["cycleway:both"](around:${radius},${lat},${lng});
+        nwr["bicycle_road"="yes"](around:${radius},${lat},${lng});
+        nwr["bicycle"="designated"](around:${radius},${lat},${lng});
+        nwr["highway"="path"]["bicycle"="yes"](around:${radius},${lat},${lng});
+        nwr["highway"="path"]["bicycle"="designated"](around:${radius},${lat},${lng});
+        nwr["amenity"~"^(bicycle_rental|bicycle_repair_station|bicycle_parking)$"](around:${radius},${lat},${lng});
         
         // Shopping
         nwr["shop"~"^(bakery|butcher|clothes|mall|department_store)$"](around:${radius},${lat},${lng});
@@ -326,7 +342,10 @@ async function calculateQualityScore(
         amenityDetails.pharmacies.push({ lat: elementLat, lng: elementLng, name })
       }
       
-      if (['cinema', 'theatre', 'library'].includes(tags.amenity) || tags.tourism === 'museum') {
+      if (['cinema', 'theatre', 'library'].includes(tags.amenity) || 
+          tags.tourism === 'museum' ||
+          ['gallery', 'art_gallery', 'exhibition_centre'].includes(tags.tourism) || 
+          tags.amenity === 'art_gallery') {
         amenityCounts.culture++
         const type = tags.amenity || tags.tourism || 'culture'
         amenityDetails.culture.push({ lat: elementLat, lng: elementLng, name, type })
@@ -346,6 +365,26 @@ async function calculateQualityScore(
         amenityCounts.transport++
         const type = tags.highway || tags.railway || tags.public_transport || 'transport'
         amenityDetails.transport.push({ lat: elementLat, lng: elementLng, name, type })
+      }
+      
+      if (['bicycle_rental', 'bicycle_repair_station'].includes(tags.amenity) || 
+          tags.highway === 'cycleway' || 
+          tags.amenity === 'bicycle_parking' ||
+          tags.cycleway ||
+          tags['cycleway:left'] ||
+          tags['cycleway:right'] ||
+          tags['cycleway:both'] ||
+          tags.bicycle_road === 'yes' ||
+          tags.bicycle === 'designated' ||
+          (tags.highway === 'path' && (tags.bicycle === 'yes' || tags.bicycle === 'designated'))) {
+        amenityCounts.cycling++
+        let type = 'cycling'
+        if (tags.highway === 'cycleway') type = 'cycleway'
+        else if (tags.cycleway || tags['cycleway:left'] || tags['cycleway:right'] || tags['cycleway:both']) type = 'bike_lane'
+        else if (tags.bicycle_road === 'yes') type = 'bicycle_road'
+        else if (tags.bicycle === 'designated') type = 'designated_path'
+        else if (tags.amenity) type = tags.amenity
+        amenityDetails.cycling.push({ lat: elementLat, lng: elementLng, name, type })
       }
       
       if (['restaurant', 'cafe', 'fast_food', 'bar', 'pub'].includes(tags.amenity)) {
@@ -373,9 +412,10 @@ async function calculateQualityScore(
         amenityDetails.services.push({ lat: elementLat, lng: elementLng, name, type: tags.amenity })
       }
       
-      if (tags.shop === 'hairdresser') {
+      if (['hairdresser', 'beauty'].includes(tags.shop) || tags.amenity === 'hairdresser') {
         amenityCounts.hairdresser++
-        amenityDetails.hairdresser.push({ lat: elementLat, lng: elementLng, name })
+        const type = tags.shop || tags.amenity || 'hairdresser'
+        amenityDetails.hairdresser.push({ lat: elementLat, lng: elementLng, name, type })
       }
       
       if (['university', 'college'].includes(tags.amenity)) {
@@ -394,6 +434,7 @@ async function calculateQualityScore(
     amenityDetails.sports = removeDuplicates(amenityDetails.sports)
     amenityDetails.parks = removeDuplicates(amenityDetails.parks)
     amenityDetails.transport = removeDuplicates(amenityDetails.transport)
+    amenityDetails.cycling = removeDuplicates(amenityDetails.cycling)
     amenityDetails.restaurants = removeDuplicates(amenityDetails.restaurants)
     amenityDetails.shopping = removeDuplicates(amenityDetails.shopping)
     amenityDetails.finance = removeDuplicates(amenityDetails.finance)
@@ -412,6 +453,7 @@ async function calculateQualityScore(
     amenityCounts.sports = amenityDetails.sports.length
     amenityCounts.parks = amenityDetails.parks.length
     amenityCounts.transport = amenityDetails.transport.length
+    amenityCounts.cycling = amenityDetails.cycling.length
     amenityCounts.restaurants = amenityDetails.restaurants.length
     amenityCounts.shopping = amenityDetails.shopping.length
     amenityCounts.finance = amenityDetails.finance.length
@@ -430,6 +472,7 @@ async function calculateQualityScore(
     const sportsScore = Math.min(10, Math.round(amenityCounts.sports * 1.5))
     const parksScore = Math.min(10, Math.round(amenityCounts.parks * 1.5))
     const transportScore = Math.min(10, Math.round(amenityCounts.transport * 0.5))
+    const cyclingScore = Math.min(10, Math.round(amenityCounts.cycling * 1.5))
     const restaurantScore = Math.min(10, Math.round(amenityCounts.restaurants * 1.0))
     const shoppingScore = Math.min(10, Math.round(amenityCounts.shopping * 1.0))
     const financeScore = Math.min(10, Math.round(amenityCounts.finance * 1.5))
@@ -474,12 +517,14 @@ async function calculateQualityScore(
             case 'sports': score = sportsScore; break
             case 'parks': score = parksScore; break
             case 'transport': score = transportScore; break
+            case 'cycling': score = cyclingScore; break
             case 'restaurants': score = restaurantScore; break
             case 'shopping': score = shoppingScore; break
             case 'finance': score = financeScore; break
             case 'safety': score = safetyScore; break
             case 'services': score = servicesScore; break
             case 'education': score = educationScore; break
+            case 'hairdresser': score = hairdresserScore; break
           }
           
           overallScore += score * finalWeight
@@ -503,23 +548,25 @@ async function calculateQualityScore(
       overallScore = totalWeight > 0 ? Math.round(overallScore / totalWeight) : 0
     } else {
       // Fallback: Original-Berechnung
-      let baseScore = (kindergartenScore * 0.08 + 
-         schoolScore * 0.08 + 
-         supermarketScore * 0.08 + 
-         doctorScore * 0.08 + 
-         pharmacyScore * 0.06 + 
-         cultureScore * 0.1 +
-         sportsScore * 0.08 +
-         parksScore * 0.08 +
-         transportScore * 0.08 +
-         restaurantScore * 0.06 +
-         shoppingScore * 0.06 +
-         financeScore * 0.05 +
-         safetyScore * 0.05 +
+      let baseScore = (kindergartenScore * 0.07 + 
+         schoolScore * 0.07 + 
+         supermarketScore * 0.07 + 
+         doctorScore * 0.07 + 
+         pharmacyScore * 0.05 + 
+         cultureScore * 0.13 +
+         sportsScore * 0.07 +
+         parksScore * 0.07 +
+         transportScore * 0.07 +
+         cyclingScore * 0.06 +
+         restaurantScore * 0.05 +
+         shoppingScore * 0.05 +
+         financeScore * 0.04 +
+         safetyScore * 0.04 +
          servicesScore * 0.04 +
-         educationScore * 0.06 +
-         (10 - noiseScore) * 0.03 + 
-         (10 - trafficScore) * 0.03)
+         educationScore * 0.05 +
+         hairdresserScore * 0.03 +
+         (10 - noiseScore) * 0.02 + 
+         (10 - trafficScore) * 0.02)
       
       // Lebenszufriedenheit des Bundeslandes einbeziehen (10% Gewichtung)
       if (bundeslandInfo.lebenszufriedenheit) {
@@ -543,6 +590,7 @@ async function calculateQualityScore(
       sports: sportsScore,
       parks: parksScore,
       transport: transportScore,
+      cycling: cyclingScore,
       restaurants: restaurantScore,
       shopping: shoppingScore,
       finance: financeScore,
@@ -620,7 +668,7 @@ async function calculateQualityScore(
   }
 }
 
-// Funktion zur Berechnung des Klima-Scores basierend auf Klimadaten
+// Funktion zur Berechnung des Klima-Scores basierend auf Klimadaten (strengere Bewertung)
 function calculateClimaScore(klimadaten: {temperatur: number, niederschlag: number, sonnenschein: number} | null): {
   temperaturScore: number,
   niederschlagScore: number,
@@ -631,39 +679,83 @@ function calculateClimaScore(klimadaten: {temperatur: number, niederschlag: numb
     return { temperaturScore: 5, niederschlagScore: 5, sonnenscheinScore: 5, klimaScore: 5 }
   }
 
-  // Temperatur-Score (ideal: 10-15°C, Score wird niedriger bei Extremen)
+  // Temperatur-Score (strengere Bewertung: ideal 9-13°C, härtere Penalties für Extreme)
   let temperaturScore = 10
-  if (klimadaten.temperatur < 8) {
-    temperaturScore = Math.max(0, 10 - Math.abs(10 - klimadaten.temperatur) * 2)
-  } else if (klimadaten.temperatur > 15) {
-    temperaturScore = Math.max(0, 10 - Math.abs(klimadaten.temperatur - 12) * 1.5)
+  const idealTemp = 11 // Optimale Temperatur
+  const tempDiff = Math.abs(klimadaten.temperatur - idealTemp)
+  
+  if (klimadaten.temperatur < 7) {
+    // Sehr kalt: drastische Penalty
+    temperaturScore = Math.max(0, 3 - (7 - klimadaten.temperatur) * 0.8)
+  } else if (klimadaten.temperatur > 16) {
+    // Sehr warm: drastische Penalty
+    temperaturScore = Math.max(0, 3 - (klimadaten.temperatur - 16) * 0.7)
+  } else if (tempDiff <= 2) {
+    // Idealer Bereich (9-13°C): maximaler Score mit sanftem Abfall
+    temperaturScore = 10 - tempDiff * 1.5
   } else {
-    temperaturScore = 10 - Math.abs(klimadaten.temperatur - 12) * 0.5
+    // Außerhalb des idealen Bereichs: starker Abfall
+    temperaturScore = Math.max(1, 7 - (tempDiff - 2) * 2.5)
   }
 
-  // Niederschlag-Score (ideal: 700-900mm, zu wenig oder zu viel ist schlecht)
+  // Niederschlag-Score (strengere Bewertung: ideal 750-850mm, härtere Penalties)
   let niederschlagScore = 10
-  if (klimadaten.niederschlag < 600) {
-    niederschlagScore = Math.max(0, (klimadaten.niederschlag / 600) * 10)
-  } else if (klimadaten.niederschlag > 1000) {
-    niederschlagScore = Math.max(0, 10 - (klimadaten.niederschlag - 1000) / 100)
+  const idealNiederschlag = 800
+  const niederschlagDiff = Math.abs(klimadaten.niederschlag - idealNiederschlag)
+  
+  if (klimadaten.niederschlag < 500) {
+    // Sehr trocken: drastische Penalty
+    niederschlagScore = Math.max(0, 2 - (500 - klimadaten.niederschlag) / 100)
+  } else if (klimadaten.niederschlag > 1200) {
+    // Sehr nass: drastische Penalty
+    niederschlagScore = Math.max(0, 2 - (klimadaten.niederschlag - 1200) / 150)
+  } else if (niederschlagDiff <= 50) {
+    // Idealer Bereich (750-850mm): maximaler Score
+    niederschlagScore = 10 - niederschlagDiff / 25
+  } else if (niederschlagDiff <= 150) {
+    // Akzeptabler Bereich: moderater Abfall
+    niederschlagScore = Math.max(3, 8 - (niederschlagDiff - 50) / 20)
   } else {
-    const idealRange = Math.abs(klimadaten.niederschlag - 800)
-    niederschlagScore = Math.max(0, 10 - idealRange / 50)
+    // Außerhalb akzeptabler Bereich: starker Abfall
+    niederschlagScore = Math.max(1, 3 - (niederschlagDiff - 150) / 50)
   }
 
-  // Sonnenschein-Score (mehr ist besser, bis zu einem Maximum)
-  let sonnenscheinScore = Math.min(10, (klimadaten.sonnenschein / 2000) * 10)
+  // Sonnenschein-Score (strengere Bewertung: optimal 1600-1800h, zu wenig oder zu viel ist problematisch)
+  let sonnenscheinScore = 10
+  const idealSonnenschein = 1700
+  const sonnenscheinDiff = Math.abs(klimadaten.sonnenschein - idealSonnenschein)
+  
+  if (klimadaten.sonnenschein < 1200) {
+    // Zu wenig Sonne: deutliche Penalty
+    sonnenscheinScore = Math.max(1, (klimadaten.sonnenschein / 1200) * 6)
+  } else if (klimadaten.sonnenschein > 2200) {
+    // Zu viel Sonne (extreme Hitze): Penalty
+    sonnenscheinScore = Math.max(2, 8 - (klimadaten.sonnenschein - 2200) / 100)
+  } else if (sonnenscheinDiff <= 100) {
+    // Idealer Bereich: maximaler Score
+    sonnenscheinScore = 10 - sonnenscheinDiff / 50
+  } else {
+    // Außerhalb ideal: moderater Abfall
+    sonnenscheinScore = Math.max(3, 8 - (sonnenscheinDiff - 100) / 80)
+  }
 
-  // Gesamt-Klima-Score (gewichteter Durchschnitt)
-  const klimaScore = Math.round(
-    (temperaturScore * 0.4 + niederschlagScore * 0.3 + sonnenscheinScore * 0.3)
-  )
+  // Gesamt-Klima-Score (verschärfte Gewichtung und strengere Bewertung)
+  // Temperatur wird stärker gewichtet, da sie den größten Einfluss auf Lebensqualität hat
+  const gewichteterScore = (temperaturScore * 0.45 + niederschlagScore * 0.35 + sonnenscheinScore * 0.2)
+  
+  // Zusätzliche Penalty für Kombinationen extremer Werte
+  let extremePenalty = 0
+  if ((klimadaten.temperatur < 8 || klimadaten.temperatur > 15) && 
+      (klimadaten.niederschlag < 600 || klimadaten.niederschlag > 1100)) {
+    extremePenalty = 1.5 // Penalty für Kombination aus extremer Temperatur und extremem Niederschlag
+  }
+  
+  const klimaScore = Math.round(Math.max(0, gewichteterScore - extremePenalty))
 
   return {
-    temperaturScore: Math.round(temperaturScore),
-    niederschlagScore: Math.round(niederschlagScore),
-    sonnenscheinScore: Math.round(sonnenscheinScore),
+    temperaturScore: Math.round(Math.max(0, Math.min(10, temperaturScore))),
+    niederschlagScore: Math.round(Math.max(0, Math.min(10, niederschlagScore))),
+    sonnenscheinScore: Math.round(Math.max(0, Math.min(10, sonnenscheinScore))),
     klimaScore: Math.max(0, Math.min(10, klimaScore))
   }
 }

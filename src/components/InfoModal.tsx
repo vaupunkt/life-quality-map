@@ -594,39 +594,56 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                   <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-gray-50'}`}>
                     <h6 className="font-semibold mb-2 flex items-center gap-2">
                       <span>🌡️</span>
-                      Temperatur-Bewertung (40% Gewichtung)
+                      Temperatur-Bewertung (45% Gewichtung - Verschärft)
                     </h6>
                     <div className="text-sm space-y-2">
-                      <div><strong>Idealbereich:</strong> 10-15°C = maximaler Score</div>
-                      <div><strong>Zu kalt (&lt;8°C):</strong> Score = max(0, 10 - |10-Temperatur| × 2)</div>
-                      <div><strong>Zu warm (&gt;15°C):</strong> Score = max(0, 10 - |Temperatur-12| × 1.5)</div>
+                      <div><strong>Idealbereich:</strong> 9-13°C = maximaler Score</div>
+                      <div><strong>Sehr kalt (&lt;7°C):</strong> Score = max(0, 3 - (7-Temperatur) × 0.8)</div>
+                      <div><strong>Sehr warm (&gt;16°C):</strong> Score = max(0, 3 - (Temperatur-16) × 0.7)</div>
+                      <div><strong>Außerhalb ideal:</strong> Starker Abfall mit Penalty × 2.5</div>
                       <div className="text-green-600"><strong>Beispiel:</strong> Hamburg 11,3°C → Score: 10/10</div>
+                      <div className="text-red-600"><strong>Verschärft:</strong> Extreme Temperaturen führen zu drastischen Score-Abfällen</div>
                     </div>
                   </div>
 
                   <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-gray-50'}`}>
                     <h6 className="font-semibold mb-2 flex items-center gap-2">
                       <span>🌧️</span>
-                      Niederschlag-Bewertung (30% Gewichtung)
+                      Niederschlag-Bewertung (35% Gewichtung - Verschärft)
                     </h6>
                     <div className="text-sm space-y-2">
-                      <div><strong>Idealbereich:</strong> 700-900mm/Jahr = maximaler Score</div>
-                      <div><strong>Zu trocken (&lt;600mm):</strong> Score = (Niederschlag ÷ 600) × 10</div>
-                      <div><strong>Zu nass (&gt;1000mm):</strong> Score = 10 - (Niederschlag-1000) ÷ 100</div>
-                      <div className="text-orange-600"><strong>Beispiel:</strong> Saarland 1204,9mm → Score: 8/10</div>
+                      <div><strong>Idealbereich:</strong> 750-850mm/Jahr = maximaler Score</div>
+                      <div><strong>Sehr trocken (&lt;500mm):</strong> Score = max(0, 2 - (500-Niederschlag) ÷ 100)</div>
+                      <div><strong>Sehr nass (&gt;1200mm):</strong> Score = max(0, 2 - (Niederschlag-1200) ÷ 150)</div>
+                      <div><strong>Engerer Idealbereich:</strong> Nur ±50mm um 800mm = voller Score</div>
+                      <div className="text-orange-600"><strong>Beispiel:</strong> Bayern 1070,4mm → Score: 4/10</div>
+                      <div className="text-red-600"><strong>Verschärft:</strong> Extreme werden noch härter bestraft</div>
                     </div>
                   </div>
 
                   <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-gray-50'}`}>
                     <h6 className="font-semibold mb-2 flex items-center gap-2">
                       <span>☀️</span>
-                      Sonnenschein-Bewertung (30% Gewichtung)
+                      Sonnenschein-Bewertung (20% Gewichtung - Verschärft)
                     </h6>
                     <div className="text-sm space-y-2">
-                      <div><strong>Bewertung:</strong> Mehr Sonnenstunden = höherer Score</div>
-                      <div><strong>Maximum:</strong> 2000h/Jahr = 10/10 Punkte</div>
-                      <div><strong>Formel:</strong> Score = min(10, (Sonnenstunden ÷ 2000) × 10)</div>
-                      <div className="text-green-600"><strong>Beispiel:</strong> Berlin 1914,5h → Score: 10/10</div>
+                      <div><strong>Idealbereich:</strong> 1600-1800h/Jahr = maximaler Score</div>
+                      <div><strong>Zu wenig (&lt;1200h):</strong> Score = max(1, (Sonnenstunden ÷ 1200) × 6)</div>
+                      <div><strong>Zu viel (&gt;2200h):</strong> Score = max(2, 8 - (Sonnenstunden-2200) ÷ 100)</div>
+                      <div><strong>Optimal bei 1700h:</strong> Weniger Gewichtung, aber präzisere Bewertung</div>
+                      <div className="text-green-600"><strong>Beispiel:</strong> Brandenburg 1851,1h → Score: 8/10</div>
+                      <div className="text-red-600"><strong>Verschärft:</strong> Extreme Hitze (zu viel Sonne) wird bestraft</div>
+                    </div>
+                  </div>
+
+                  <div className={`p-4 rounded-lg border-l-4 border-red-500 ${
+                    darkMode ? 'bg-red-900/20' : 'bg-red-50'
+                  }`}>
+                    <h6 className="font-semibold text-red-600 mb-2">Zusätzliche Extreme-Penalty</h6>
+                    <div className="text-sm space-y-1">
+                      <li>• <strong>Kombinierte Extreme:</strong> -1.5 Punkte bei extremer Temperatur UND extremem Niederschlag</li>
+                      <li>• <strong>Härtere Grenzen:</strong> Engere optimale Bereiche, steilere Abfälle</li>
+                      <li>• <strong>Verschärfte Gewichtung:</strong> Temperatur wird stärker bewertet (45% statt 40%)</li>
                     </div>
                   </div>
                 </div>
@@ -634,8 +651,8 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                 <div className={`p-4 rounded-lg font-mono text-sm ${
                   darkMode ? 'bg-slate-700' : 'bg-gray-100'
                 } mt-4`}>
-                  <strong>Klima-Gesamtscore:</strong><br/>
-                  (Temperatur × 0.4) + (Niederschlag × 0.3) + (Sonnenschein × 0.3)
+                  <strong>Klima-Gesamtscore (Verschärft):</strong><br/>
+                  (Temperatur × 0.45) + (Niederschlag × 0.35) + (Sonnenschein × 0.2) - Extreme-Penalty
                 </div>
               </div>
 

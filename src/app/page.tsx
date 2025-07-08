@@ -23,12 +23,14 @@ interface QualityScore {
   sports: number
   parks: number
   transport: number
+  cycling: number
   restaurants: number
   shopping: number
   finance: number
   safety: number
   services: number
   education: number
+  hairdresser: number
   noise: number
   traffic: number
   address: string
@@ -51,12 +53,14 @@ interface QualityScore {
     sports: Array<{lat: number, lng: number, name: string, type: string}>
     parks: Array<{lat: number, lng: number, name: string}>
     transport: Array<{lat: number, lng: number, name: string, type: string}>
+    cycling: Array<{lat: number, lng: number, name: string, type: string}>
     restaurants: Array<{lat: number, lng: number, name: string, type: string}>
     shopping: Array<{lat: number, lng: number, name: string, type: string}>
     finance: Array<{lat: number, lng: number, name: string, type: string}>
     safety: Array<{lat: number, lng: number, name: string, type: string}>
     services: Array<{lat: number, lng: number, name: string, type: string}>
     education: Array<{lat: number, lng: number, name: string, type: string}>
+    hairdresser: Array<{lat: number, lng: number, name: string, type: string}>
   }
 }
 
@@ -137,13 +141,14 @@ export default function Home() {
       isOpen: true,
       enabled: true
     },
-    nahverkehr: {
-      title: 'Nahverkehr',
+    infrastruktur: {
+      title: 'Infrastruktur',
       icon: '🚌',
       weight: 1.0,
       order: 4,
       categories: [
-        { key: 'transport', label: 'ÖPNV', weight: 1.2, enabled: true }
+        { key: 'transport', label: 'ÖPNV', weight: 1.2, enabled: true },
+        { key: 'cycling', label: 'Fahrradwege', weight: 1.0, enabled: true }
       ],
       isOpen: true,
       enabled: true
@@ -171,7 +176,7 @@ export default function Home() {
     bildung: false,
     gesundheit: false,
     freizeit: false,
-    nahverkehr: false,
+    infrastruktur: false,
     alltag: false
   })
 
@@ -180,7 +185,7 @@ export default function Home() {
     bildung: false,
     gesundheit: false,
     freizeit: false,
-    nahverkehr: false,
+    infrastruktur: false,
     alltag: false
   })
 
@@ -419,8 +424,8 @@ export default function Home() {
     let total = 0
     const amenityKeys = [
       'kindergartens', 'schools', 'education', 'supermarkets', 'doctors', 
-      'pharmacies', 'culture', 'sports', 'parks', 'transport', 
-      'restaurants', 'shopping', 'finance', 'safety', 'services'
+      'pharmacies', 'culture', 'sports', 'parks', 'transport', 'cycling',
+      'restaurants', 'shopping', 'finance', 'safety', 'services', 'hairdresser'
     ]
     
     amenityKeys.forEach(key => {
@@ -434,13 +439,15 @@ export default function Home() {
                          key === 'sports' ? 'sports' :
                          key === 'parks' ? 'parks' :
                          key === 'transport' ? 'transport' :
+                         key === 'cycling' ? 'cycling' :
                          key === 'restaurants' ? 'restaurants' :
                          key === 'shopping' ? 'shopping' :
                          key === 'finance' ? 'finance' :
                          key === 'safety' ? 'safety' :
-                         'services'
+                         key === 'services' ? 'services' :
+                         key === 'hairdresser' ? 'hairdresser' : null
       
-      if (categoryVisibility[categoryKey] !== false) {
+      if (categoryKey && categoryVisibility[categoryKey] !== false) {
         const amenities = qualityScore.amenities?.[key as keyof typeof qualityScore.amenities]
         total += amenities?.length || 0
       }
@@ -520,12 +527,14 @@ export default function Home() {
       sports: 'bg-orange-500',
       parks: 'bg-emerald-500',
       transport: 'bg-indigo-500',
+      cycling: 'bg-green-600',
       supermarkets: 'bg-yellow-500',
       restaurants: 'bg-yellow-600',
       shopping: 'bg-teal-600',
       finance: 'bg-green-700',
       safety: 'bg-red-700',
-      services: 'bg-gray-600'
+      services: 'bg-gray-600',
+      hairdresser: 'bg-pink-400'
     }
     return colors[key] || 'bg-gray-500'
   }
@@ -620,7 +629,7 @@ export default function Home() {
         bildung: { weight: 1.0, categories: { kindergarten: 1.0, schools: 1.2, education: 0.8 } },
         gesundheit: { weight: 1.1, categories: { doctors: 1.2, pharmacies: 1.0 } },
         freizeit: { weight: 0.9, categories: { culture: 0.8, sports: 1.0, parks: 1.1, restaurants: 0.8 } },
-        nahverkehr: { weight: 1.0, categories: { transport: 1.2 } },
+        infrastruktur: { weight: 1.0, categories: { transport: 1.2, cycling: 1.0 } },
         alltag: { weight: 1.0, categories: { supermarkets: 1.2, shopping: 0.8, finance: 0.8, safety: 1.1, services: 0.8, hairdresser: 0.8 } }
       }
     },
@@ -632,7 +641,7 @@ export default function Home() {
         bildung: { weight: 1.2, categories: { kindergarten: 1.2, schools: 1.2, education: 0.8 } },
         gesundheit: { weight: 1.1, categories: { doctors: 1.2, pharmacies: 1.0 } },
         freizeit: { weight: 1.0, categories: { culture: 0.8, sports: 1.0, parks: 1.2, restaurants: 0.8 } },
-        nahverkehr: { weight: 1.0, categories: { transport: 1.1 } },
+        infrastruktur: { weight: 1.0, categories: { transport: 1.1, cycling: 1.1 } },
         alltag: { weight: 1.1, categories: { supermarkets: 1.2, shopping: 0.8, finance: 0.8, safety: 1.2, services: 0.8, hairdresser: 0.8 } }
       }
     },
@@ -644,7 +653,7 @@ export default function Home() {
         bildung: { weight: 0.8, categories: { kindergarten: 0.8, schools: 0.8, education: 0.9 } },
         gesundheit: { weight: 1.0, categories: { doctors: 1.1, pharmacies: 1.0 } },
         freizeit: { weight: 1.1, categories: { culture: 1.1, sports: 1.1, parks: 1.0, restaurants: 1.1 } },
-        nahverkehr: { weight: 1.2, categories: { transport: 1.2 } },
+        infrastruktur: { weight: 1.2, categories: { transport: 1.2, cycling: 1.1 } },
         alltag: { weight: 1.0, categories: { supermarkets: 1.1, shopping: 1.0, finance: 0.9, safety: 1.0, services: 0.9, hairdresser: 0.9 } }
       }
     },
@@ -656,7 +665,7 @@ export default function Home() {
         bildung: { weight: 0.8, categories: { kindergarten: 0.8, schools: 0.8, education: 0.8 } },
         gesundheit: { weight: 1.2, categories: { doctors: 1.2, pharmacies: 1.2 } },
         freizeit: { weight: 1.0, categories: { culture: 1.0, sports: 0.9, parks: 1.1, restaurants: 0.9 } },
-        nahverkehr: { weight: 1.2, categories: { transport: 1.2 } },
+        infrastruktur: { weight: 1.2, categories: { transport: 1.2, cycling: 0.8 } },
         alltag: { weight: 1.1, categories: { supermarkets: 1.2, shopping: 0.8, finance: 1.0, safety: 1.1, services: 1.0, hairdresser: 0.9 } }
       }
     },
@@ -668,7 +677,7 @@ export default function Home() {
         bildung: { weight: 1.2, categories: { kindergarten: 0.8, schools: 0.8, education: 1.2 } },
         gesundheit: { weight: 1.0, categories: { doctors: 1.0, pharmacies: 1.0 } },
         freizeit: { weight: 1.1, categories: { culture: 1.1, sports: 1.0, parks: 1.0, restaurants: 1.1 } },
-        nahverkehr: { weight: 1.2, categories: { transport: 1.2 } },
+        infrastruktur: { weight: 1.2, categories: { transport: 1.2, cycling: 1.2 } },
         alltag: { weight: 1.0, categories: { supermarkets: 1.1, shopping: 0.8, finance: 0.8, safety: 1.0, services: 0.8, hairdresser: 0.8 } }
       }
     }
@@ -1170,20 +1179,7 @@ export default function Home() {
                     }`}>
                       Gesamtbewertung
                     </div>
-                    <div className="flex justify-center">
-                      <div className="flex">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <span
-                            key={star}
-                            className={`text-lg ${
-                              star <= qualityScore.overall / 2 ? 'text-yellow-400' : 'text-gray-300'
-                            }`}
-                          >
-                            ⭐
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+           
                     {recalculatingScore && (
                       <div className="text-xs text-emerald-500 mt-2 font-medium">
                         wird neu berechnet...
@@ -1320,6 +1316,7 @@ export default function Home() {
                                                category.key === 'sports' ? 'sports' :
                                                category.key === 'parks' ? 'parks' :
                                                category.key === 'transport' ? 'transport' :
+                                               category.key === 'cycling' ? 'cycling' :
                                                category.key === 'restaurants' ? 'restaurants' :
                                                category.key === 'supermarkets' ? 'supermarkets' :
                                                category.key === 'shopping' ? 'shopping' :
