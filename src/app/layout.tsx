@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'Lebensqualitäts-Karte',
   description: 'Interaktive Karte zur Bewertung der Lebensqualität basierend auf nahegelegenen Einrichtungen. Entdecke die Lebensqualität in deiner Stadt!',
   keywords: ['Lebensqualität', 'Karte', 'Städte', 'Wohnen', 'Infrastruktur', 'Deutschland'],
-  authors: [{ name: 'Lebensqualitäts-Karte Team', url: 'https://lebensqualitaet-karte.de' }],
+  authors: [{ name: 'Lebensqualitäts-Karte Team', url: 'https://lifequalitymap.vercel.app' }],
   creator: 'made with ❤️ from Greifswald',
   publisher: 'Lebensqualitäts-Karte',
   formatDetection: {
@@ -16,11 +16,11 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://lebensqualitaet-karte.de'),
+  metadataBase: new URL('https://lifequalitymap.vercel.app'),
   openGraph: {
     title: 'Lebensqualitäts-Karte - Entdecke die Lebensqualität in deiner Stadt',
     description: '🍀 Interaktive Karte zur Bewertung der Lebensqualität basierend auf Bildung, Gesundheit, Freizeit und Infrastruktur. Finde heraus, wie lebenswert deine Stadt ist!',
-    url: 'https://lebensqualitaet-karte.de',
+    url: 'https://lifequalitymap.vercel.app',
     siteName: 'Lebensqualitäts-Karte',
     images: [
       {
