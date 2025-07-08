@@ -276,7 +276,7 @@ function HomeContent() {
     setRadiusSettings(newSettings)
   }
 
-  const handleLocationClick = async (lat: number, lng: number) => {
+  const handleLocationClick = useCallback(async (lat: number, lng: number) => {
     setLoading(true)
     setError('')
     
@@ -300,7 +300,7 @@ function HomeContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const calculateQualityScore = useCallback(async (lat: number, lng: number, addressName: string) => {
     setMapLoading(true)
@@ -341,7 +341,7 @@ function HomeContent() {
       setMapLoading(false)
       setRecalculatingScore(false)
     }
-  }, [radiusSettings, categoryGroups, categoryVisibility])
+  }, [radiusSettings, categoryGroups, categoryVisibility]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -433,7 +433,7 @@ function HomeContent() {
   }
 
   // URL-Parameter Management mit Meta-Tag Updates
-  const updateURL = (address: string) => {
+  const updateURL = useCallback((address: string) => {
     if (typeof window === 'undefined') return // SSR check
     
     try {
@@ -462,10 +462,10 @@ function HomeContent() {
     } catch (error) {
       console.error('Error updating URL:', error)
     }
-  }
+  }, [])
 
   // Update Meta Tags für Social Sharing
-  const updateMetaTags = (address: string | null) => {
+  const updateMetaTags = useCallback((address: string | null) => {
     if (typeof window === 'undefined') return
     
     try {
@@ -537,7 +537,7 @@ function HomeContent() {
     } catch (error) {
       console.error('Error updating meta tags:', error)
     }
-  }
+  }, [])
 
   // Lade Adresse aus URL beim Start
   useEffect(() => {
@@ -2220,7 +2220,7 @@ function HomeContent() {
                             <div className="text-center">
                               <div className="text-2xl mb-1">🌡️</div>
                               <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                Temperatur
+                              ⌀-Temperatur
                               </div>
                               <div className={`font-bold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                                 {qualityScore.klimadaten.temperatur}°C
@@ -2240,7 +2240,7 @@ function HomeContent() {
                             <div className="text-center">
                               <div className="text-2xl mb-1">🌧️</div>
                               <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                Niederschlag
+                              ⌀-Niederschlag
                               </div>
                               <div className={`font-bold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                                 {qualityScore.klimadaten.niederschlag}mm
@@ -2260,7 +2260,7 @@ function HomeContent() {
                             <div className="text-center">
                               <div className="text-2xl mb-1">☀️</div>
                               <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                Sonnenschein
+                              ⌀-Sonnenschein
                               </div>
                               <div className={`font-bold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                                 {qualityScore.klimadaten.sonnenschein}h
