@@ -23,6 +23,7 @@ Eine interaktive Next.js-Anwendung zur Bewertung der Lebensqualität basierend a
 - **OpenStreetMap** für Kartendaten
 - **Overpass API** für Daten über nahegelegene Einrichtungen
 - **Nominatim API** für Geocoding
+- 
 
 ## Installation
 
