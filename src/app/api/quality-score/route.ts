@@ -83,19 +83,24 @@ async function getBundeslandFromCoordinates(lat: number, lng: number): Promise<{
     const state = data.address?.state || data.address?.city || null
     
     if (!state) {
-      return { bundesland: null, lebenszufriedenheit: null }
+      return { bundesland: null, lebenszufriedenheit: null, klimadaten: null }
     }
     
     // Lebenszufriedenheitsdaten laden
     const dataPath = path.join(process.cwd(), 'src/data/lebenszufriedenheit.json')
     const lebenszufriedenheitData = JSON.parse(fs.readFileSync(dataPath, 'utf8'))
     
+    // Klimadaten laden
+    const klimaPath = path.join(process.cwd(), 'src/data/klimadaten.json')
+    const klimaData = JSON.parse(fs.readFileSync(klimaPath, 'utf8'))
+    
     // Bundesland Namen normalisieren und matchen
     const normalizedState = state.trim()
     let lebenszufriedenheit = lebenszufriedenheitData[normalizedState] || null
+    let klimadaten = klimaData[normalizedState] || null
     
     // Fallback für alternative Schreibweisen
-    if (!lebenszufriedenheit) {
+    if (!lebenszufriedenheit || !klimadaten) {
       const alternatives: {[key: string]: string} = {
         'North Rhine-Westphalia': 'Nordrhein-Westfalen',
         'Rhineland-Palatinate': 'Rheinland-Pfalz',
@@ -111,15 +116,17 @@ async function getBundeslandFromCoordinates(lat: number, lng: number): Promise<{
       
       const germanName = alternatives[normalizedState] || normalizedState
       lebenszufriedenheit = lebenszufriedenheitData[germanName] || null
+      klimadaten = klimaData[germanName] || null
     }
     
     return {
       bundesland: normalizedState,
-      lebenszufriedenheit: lebenszufriedenheit
+      lebenszufriedenheit: lebenszufriedenheit,
+      klimadaten: klimadaten
     }
   } catch (error) {
     console.error('Error fetching Bundesland:', error)
-    return { bundesland: null, lebenszufriedenheit: null }
+    return { bundesland: null, lebenszufriedenheit: null, klimadaten: null }
   }
 }
 
@@ -431,7 +438,11 @@ async function calculateQualityScore(
     const educationScore = Math.min(10, Math.round(amenityCounts.education * 1.5))
     const hairdresserScore = Math.min(10, Math.round(amenityCounts.hairdresser * 2))
 
-    // Mock scores for noise and traffic (would need specialized APIs)
+    // Klimadaten-basierte Umweltbewertung
+    const klimaScores = calculateClimaScore(bundeslandInfo.klimadaten)
+    const { temperaturScore, niederschlagScore, sonnenscheinScore, klimaScore } = klimaScores
+
+    // Mock scores for noise and traffic (replaced by climate data when environment toggle is on)
     const noiseScore = Math.floor(Math.random() * 5) + 3 // 3-7 range
     const trafficScore = Math.floor(Math.random() * 5) + 3 // 3-7 range
 
@@ -547,6 +558,11 @@ async function calculateQualityScore(
       amenities: amenityDetails,
       bundesland: bundeslandInfo.bundesland,
       lebenszufriedenheit: bundeslandInfo.lebenszufriedenheit,
+      klimadaten: bundeslandInfo.klimadaten,
+      klimaScore: klimaScore,
+      temperatur: temperaturScore,
+      niederschlag: niederschlagScore,
+      sonnenschein: sonnenscheinScore,
     }
   } catch (error) {
     console.error('Overpass API error:', error)
@@ -575,6 +591,13 @@ async function calculateQualityScore(
       address: address,
       lat: lat,
       lng: lng,
+      bundesland: null,
+      lebenszufriedenheit: null,
+      klimadaten: null,
+      klimaScore: 5,
+      temperatur: 5,
+      niederschlag: 5,
+      sonnenschein: 5,
       amenities: {
         kindergartens: [],
         schools: [],
@@ -593,8 +616,54 @@ async function calculateQualityScore(
         education: [],
         hairdresser: []
       },
-      bundesland: null,
-      lebenszufriedenheit: null,
     }
+  }
+}
+
+// Funktion zur Berechnung des Klima-Scores basierend auf Klimadaten
+function calculateClimaScore(klimadaten: {temperatur: number, niederschlag: number, sonnenschein: number} | null): {
+  temperaturScore: number,
+  niederschlagScore: number,
+  sonnenscheinScore: number,
+  klimaScore: number
+} {
+  if (!klimadaten) {
+    return { temperaturScore: 5, niederschlagScore: 5, sonnenscheinScore: 5, klimaScore: 5 }
+  }
+
+  // Temperatur-Score (ideal: 10-15°C, Score wird niedriger bei Extremen)
+  let temperaturScore = 10
+  if (klimadaten.temperatur < 8) {
+    temperaturScore = Math.max(0, 10 - Math.abs(10 - klimadaten.temperatur) * 2)
+  } else if (klimadaten.temperatur > 15) {
+    temperaturScore = Math.max(0, 10 - Math.abs(klimadaten.temperatur - 12) * 1.5)
+  } else {
+    temperaturScore = 10 - Math.abs(klimadaten.temperatur - 12) * 0.5
+  }
+
+  // Niederschlag-Score (ideal: 700-900mm, zu wenig oder zu viel ist schlecht)
+  let niederschlagScore = 10
+  if (klimadaten.niederschlag < 600) {
+    niederschlagScore = Math.max(0, (klimadaten.niederschlag / 600) * 10)
+  } else if (klimadaten.niederschlag > 1000) {
+    niederschlagScore = Math.max(0, 10 - (klimadaten.niederschlag - 1000) / 100)
+  } else {
+    const idealRange = Math.abs(klimadaten.niederschlag - 800)
+    niederschlagScore = Math.max(0, 10 - idealRange / 50)
+  }
+
+  // Sonnenschein-Score (mehr ist besser, bis zu einem Maximum)
+  let sonnenscheinScore = Math.min(10, (klimadaten.sonnenschein / 2000) * 10)
+
+  // Gesamt-Klima-Score (gewichteter Durchschnitt)
+  const klimaScore = Math.round(
+    (temperaturScore * 0.4 + niederschlagScore * 0.3 + sonnenscheinScore * 0.3)
+  )
+
+  return {
+    temperaturScore: Math.round(temperaturScore),
+    niederschlagScore: Math.round(niederschlagScore),
+    sonnenscheinScore: Math.round(sonnenscheinScore),
+    klimaScore: Math.max(0, Math.min(10, klimaScore))
   }
 }

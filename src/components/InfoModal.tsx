@@ -143,6 +143,20 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                   in die Gesamtbewertung ein und reflektiert regionale Unterschiede in der Zufriedenheit.
                 </p>
               </div>
+
+              <div className={`p-4 rounded-lg border-l-4 border-green-500 ${
+                darkMode ? 'bg-slate-700' : 'bg-green-50'
+              }`}>
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <span>🌤️</span>
+                  Klimadaten Integration
+                </h4>
+                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Die Anwendung integriert auch Klimadaten basierend auf dem Klimastatusbericht 2024. 
+                  Diese ersetzen die simulierten Lärm- und Verkehrsdaten und bieten reale Umweltfaktoren 
+                  wie Temperatur, Niederschlag und Sonnenscheindauer für eine fundierte Bewertung.
+                </p>
+              </div>
             </div>
           )}
 

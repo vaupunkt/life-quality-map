@@ -36,6 +36,11 @@ interface QualityScore {
   lng: number
   bundesland?: string | null
   lebenszufriedenheit?: number | null
+  klimadaten?: {temperatur: number, niederschlag: number, sonnenschein: number} | null
+  klimaScore?: number
+  temperatur?: number
+  niederschlag?: number
+  sonnenschein?: number
   amenities?: {
     kindergartens: Array<{lat: number, lng: number, name: string}>
     schools: Array<{lat: number, lng: number, name: string}>
@@ -1117,7 +1122,7 @@ export default function Home() {
                     : 'bg-blue-50 border-blue-200 text-blue-700'
                 }`}>
                   <p className="text-xs">
-                    <strong>💡 Tipp:</strong> Umweltdaten zeigen simulierte Werte für Lärm und Verkehrsbelastung
+                    <strong>💡 Tipp:</strong> Umweltdaten zeigen Klimadaten basierend auf dem Klimastatusbericht 2024
                   </p>
                 </div>
               </div>
@@ -1421,42 +1426,120 @@ export default function Home() {
                     </div>
                   ))}
                   
-                  {/* Lärmbelastung und Verkehr */}
+                  {/* Klimadaten und Umweltfaktoren */}
                   {showEnviromentData ? <div className={`rounded-xl border p-4 ${
                     darkMode 
-                      ? 'bg-gradient-to-r from-red-900/50 to-orange-900/50 border-red-700' 
-                      : 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200'
+                      ? 'bg-gradient-to-r from-blue-900/50 to-green-900/50 border-blue-700' 
+                      : 'bg-gradient-to-r from-blue-50 to-green-50 border-blue-200'
                   }`}>
                     <h3 className={`font-bold mb-3 flex items-center gap-2 ${
                       darkMode ? 'text-gray-200' : 'text-gray-800'
                     }`}>
-                      <span className="text-xl">⚠️</span>
-                      Belastungsfaktoren
+                      <span className="text-xl">🌤️</span>
+                      Klimadaten {qualityScore.bundesland && `(${qualityScore.bundesland})`}
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className={`flex justify-between items-center p-3 rounded-lg ${
-                        darkMode ? 'bg-slate-700' : 'bg-white'
-                      }`}>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">🔊</span>
-                          <span className={`font-medium ${
-                            darkMode ? 'text-gray-200' : 'text-gray-700'
-                          }`}>Lärm</span>
+                    
+                    {qualityScore.klimadaten ? (
+                      <div className="space-y-4">
+                        {/* Klima-Gesamtscore */}
+                        <div className={`p-3 rounded-lg border ${
+                          darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'
+                        }`}>
+                          <div className="flex justify-between items-center">
+                            <span className={`font-semibold ${
+                              darkMode ? 'text-gray-200' : 'text-gray-700'
+                            }`}>
+                              🌍 Klima-Score
+                            </span>
+                            <span className={`font-bold text-lg ${
+                              qualityScore.klimaScore! >= 7 ? 'text-green-500' : 
+                              qualityScore.klimaScore! >= 4 ? 'text-yellow-500' : 'text-red-500'
+                            }`}>
+                              {qualityScore.klimaScore}/10
+                            </span>
+                          </div>
                         </div>
-                        <span className="font-bold text-red-500 text-lg">{qualityScore.noise}/10</span>
-                      </div>
-                      <div className={`flex justify-between items-center p-3 rounded-lg ${
-                        darkMode ? 'bg-slate-700' : 'bg-white'
-                      }`}>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">🚦</span>
-                          <span className={`font-medium ${
-                            darkMode ? 'text-gray-200' : 'text-gray-700'
-                          }`}>Verkehr</span>
+                        
+                        {/* Einzelne Klimawerte */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className={`p-3 rounded-lg ${
+                            darkMode ? 'bg-slate-700' : 'bg-white'
+                          }`}>
+                            <div className="text-center">
+                              <div className="text-2xl mb-1">🌡️</div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Temperatur
+                              </div>
+                              <div className={`font-bold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                                {qualityScore.klimadaten.temperatur}°C
+                              </div>
+                              <div className={`text-xs font-medium ${
+                                qualityScore.temperatur! >= 7 ? 'text-green-500' : 
+                                qualityScore.temperatur! >= 4 ? 'text-yellow-500' : 'text-red-500'
+                              }`}>
+                                Score: {qualityScore.temperatur}/10
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className={`p-3 rounded-lg ${
+                            darkMode ? 'bg-slate-700' : 'bg-white'
+                          }`}>
+                            <div className="text-center">
+                              <div className="text-2xl mb-1">🌧️</div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Niederschlag
+                              </div>
+                              <div className={`font-bold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                                {qualityScore.klimadaten.niederschlag}mm
+                              </div>
+                              <div className={`text-xs font-medium ${
+                                qualityScore.niederschlag! >= 7 ? 'text-green-500' : 
+                                qualityScore.niederschlag! >= 4 ? 'text-yellow-500' : 'text-red-500'
+                              }`}>
+                                Score: {qualityScore.niederschlag}/10
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className={`p-3 rounded-lg ${
+                            darkMode ? 'bg-slate-700' : 'bg-white'
+                          }`}>
+                            <div className="text-center">
+                              <div className="text-2xl mb-1">☀️</div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Sonnenschein
+                              </div>
+                              <div className={`font-bold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                                {qualityScore.klimadaten.sonnenschein}h
+                              </div>
+                              <div className={`text-xs font-medium ${
+                                qualityScore.sonnenschein! >= 7 ? 'text-green-500' : 
+                                qualityScore.sonnenschein! >= 4 ? 'text-yellow-500' : 'text-red-500'
+                              }`}>
+                                Score: {qualityScore.sonnenschein}/10
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <span className="font-bold text-red-500 text-lg">{qualityScore.traffic}/10</span>
+                        
+                        <div className={`text-xs text-center ${
+                          darkMode ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
+                          Quelle: Klimastatusbericht 2024
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className={`text-center py-4 ${
+                        darkMode ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        <div className="text-2xl mb-2">📊</div>
+                        <div>Keine Klimadaten verfügbar</div>
+                        <div className="text-xs mt-1">
+                          (Nur für deutsche Bundesländer verfügbar)
+                        </div>
+                      </div>
+                    )}
                   </div> : null}
                 </div>
               </div>
