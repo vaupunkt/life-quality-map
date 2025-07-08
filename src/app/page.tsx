@@ -462,7 +462,7 @@ function HomeContent() {
     } catch (error) {
       console.error('Error updating URL:', error)
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update Meta Tags für Social Sharing
   const updateMetaTags = useCallback((address: string | null) => {
