@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -83,6 +83,13 @@ export default function Map({
   const markersRef = useRef<L.LayerGroup | null>(null)
   const radiusCircleRef = useRef<L.Circle | null>(null)
   const heatmapRef = useRef<L.LayerGroup | null>(null)
+  
+  // Pagination state for markers
+  const [currentMarkerPage, setCurrentMarkerPage] = useState(0)
+  const markersPerPage = 80
+  const [totalMarkers, setTotalMarkers] = useState(0)
+  const [visibleCategories, setVisibleCategories] = useState<string[]>([])
+  const [paginationControlsRef, setPaginationControlsRef] = useState<HTMLDivElement | null>(null)
 
   // Custom icons for different amenity types
   const createCustomIcon = (color: string, icon: string) => {
@@ -308,9 +315,20 @@ export default function Map({
     
     radiusCircleRef.current.addTo(map)
 
-    // Add amenity markers if available
+    // Add amenity markers if available with pagination
     if (qualityScore.amenities && markersRef.current) {
-      const addMarkersForCategory = (
+      // Collect all markers first
+      const allMarkers: Array<{
+        lat: number
+        lng: number
+        name: string
+        type?: string
+        category: string
+        categoryLabel: string
+        icon: L.DivIcon
+      }> = []
+
+      const collectMarkersForCategory = (
         categoryKey: string,
         amenities: Array<{lat: number, lng: number, name: string, type?: string}>,
         icon: L.DivIcon,
@@ -320,28 +338,57 @@ export default function Map({
         if (categoryVisibility[categoryKey] === false) return
         
         amenities?.forEach(amenity => {
-          const marker = L.marker([amenity.lat, amenity.lng], { icon })
-          marker.bindPopup(`<strong>${label}</strong><br>${amenity.name}${amenity.type ? `<br><small>${amenity.type}</small>` : ''}`)
-          markersRef.current!.addLayer(marker)
+          allMarkers.push({
+            lat: amenity.lat,
+            lng: amenity.lng,
+            name: amenity.name,
+            type: amenity.type,
+            category: categoryKey,
+            categoryLabel: label,
+            icon: icon
+          })
         })
       }
 
-      // Add all categories with visibility check
-      addMarkersForCategory('kindergarten', qualityScore.amenities.kindergartens, amenityIcons.kindergarten, 'Kindergarten')
-      addMarkersForCategory('schools', qualityScore.amenities.schools, amenityIcons.school, 'Schule')
-      addMarkersForCategory('education', qualityScore.amenities.education, amenityIcons.education, 'Hochschule')
-      addMarkersForCategory('supermarkets', qualityScore.amenities.supermarkets, amenityIcons.supermarket, 'Supermarkt')
-      addMarkersForCategory('doctors', qualityScore.amenities.doctors, amenityIcons.doctor, 'Arzt/Krankenhaus')
-      addMarkersForCategory('pharmacies', qualityScore.amenities.pharmacies, amenityIcons.pharmacy, 'Apotheke')
-      addMarkersForCategory('culture', qualityScore.amenities.culture, amenityIcons.culture, 'Kultur')
-      addMarkersForCategory('sports', qualityScore.amenities.sports, amenityIcons.sports, 'Sport')
-      addMarkersForCategory('parks', qualityScore.amenities.parks, amenityIcons.parks, 'Park')
-      addMarkersForCategory('transport', qualityScore.amenities.transport, amenityIcons.transport, 'ÖPNV')
-      addMarkersForCategory('restaurants', qualityScore.amenities.restaurants, amenityIcons.restaurants, 'Restaurant')
-      addMarkersForCategory('shopping', qualityScore.amenities.shopping, amenityIcons.shopping, 'Einkaufen')
-      addMarkersForCategory('finance', qualityScore.amenities.finance, amenityIcons.finance, 'Finanzen')
-      addMarkersForCategory('safety', qualityScore.amenities.safety, amenityIcons.safety, 'Sicherheit')
-      addMarkersForCategory('services', qualityScore.amenities.services, amenityIcons.services, 'Service')
+      // Collect all markers
+      collectMarkersForCategory('kindergarten', qualityScore.amenities.kindergartens, amenityIcons.kindergarten, 'Kindergarten')
+      collectMarkersForCategory('schools', qualityScore.amenities.schools, amenityIcons.school, 'Schule')
+      collectMarkersForCategory('education', qualityScore.amenities.education, amenityIcons.education, 'Hochschule')
+      collectMarkersForCategory('supermarkets', qualityScore.amenities.supermarkets, amenityIcons.supermarket, 'Supermarkt')
+      collectMarkersForCategory('doctors', qualityScore.amenities.doctors, amenityIcons.doctor, 'Arzt/Krankenhaus')
+      collectMarkersForCategory('pharmacies', qualityScore.amenities.pharmacies, amenityIcons.pharmacy, 'Apotheke')
+      collectMarkersForCategory('culture', qualityScore.amenities.culture, amenityIcons.culture, 'Kultur')
+      collectMarkersForCategory('sports', qualityScore.amenities.sports, amenityIcons.sports, 'Sport')
+      collectMarkersForCategory('parks', qualityScore.amenities.parks, amenityIcons.parks, 'Park')
+      collectMarkersForCategory('transport', qualityScore.amenities.transport, amenityIcons.transport, 'ÖPNV')
+      collectMarkersForCategory('restaurants', qualityScore.amenities.restaurants, amenityIcons.restaurants, 'Restaurant')
+      collectMarkersForCategory('shopping', qualityScore.amenities.shopping, amenityIcons.shopping, 'Einkaufen')
+      collectMarkersForCategory('finance', qualityScore.amenities.finance, amenityIcons.finance, 'Finanzen')
+      collectMarkersForCategory('safety', qualityScore.amenities.safety, amenityIcons.safety, 'Sicherheit')
+      collectMarkersForCategory('services', qualityScore.amenities.services, amenityIcons.services, 'Service')
+
+      // Update total markers and reset page if needed
+      setTotalMarkers(allMarkers.length)
+      
+      // Reset to first page if current page would be out of bounds
+      const maxPage = Math.ceil(allMarkers.length / markersPerPage) - 1
+      if (currentMarkerPage > maxPage) {
+        setCurrentMarkerPage(0)
+      }
+
+      // Get unique categories for the current page
+      const startIdx = currentMarkerPage * markersPerPage
+      const endIdx = Math.min(startIdx + markersPerPage, allMarkers.length)
+      const currentPageMarkers = allMarkers.slice(startIdx, endIdx)
+      const currentPageCategories = Array.from(new Set(currentPageMarkers.map(m => m.categoryLabel)))
+      setVisibleCategories(currentPageCategories)
+
+      // Add markers for current page
+      currentPageMarkers.forEach(markerData => {
+        const marker = L.marker([markerData.lat, markerData.lng], { icon: markerData.icon })
+        marker.bindPopup(`<strong>${markerData.categoryLabel}</strong><br>${markerData.name}${markerData.type ? `<br><small>${markerData.type}</small>` : ''}`)
+        markersRef.current!.addLayer(marker)
+      })
     }
 
     // Add heatmap if requested
@@ -359,17 +406,75 @@ export default function Map({
         mapRef.current.invalidateSize()
       }
     }, 100)
-  }, [qualityScore, radiusSettings, showHeatmap, categoryVisibility])
+  }, [qualityScore, radiusSettings, showHeatmap, categoryVisibility, currentMarkerPage])
+
+  // Reset marker page when quality score or category visibility changes
+  useEffect(() => {
+    setCurrentMarkerPage(0)
+  }, [qualityScore, categoryVisibility])
+
+  // Pagination controls component
+  const renderPaginationControls = () => {
+    if (totalMarkers <= markersPerPage) return null
+
+    const totalPages = Math.ceil(totalMarkers / markersPerPage)
+    const hasNextPage = currentMarkerPage < totalPages - 1
+    const hasPrevPage = currentMarkerPage > 0
+
+    return (
+      <div 
+        className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-600 p-3"
+        style={{ zIndex: 1000 }}
+      >
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCurrentMarkerPage(Math.max(0, currentMarkerPage - 1))}
+            disabled={!hasPrevPage}
+            className="px-3 py-1 text-sm font-medium bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded transition-colors"
+            title="Vorherige Seite"
+          >
+            ←
+          </button>
+          
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <div className="text-center">
+              <div>Seite {currentMarkerPage + 1} von {totalPages}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {totalMarkers} Marker gesamt
+              </div>
+              {visibleCategories.length > 0 && (
+                <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                  {visibleCategories.join(', ')}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <button
+            onClick={() => setCurrentMarkerPage(Math.min(totalPages - 1, currentMarkerPage + 1))}
+            disabled={!hasNextPage}
+            className="px-3 py-1 text-sm font-medium bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded transition-colors"
+            title="Nächste Seite"
+          >
+            →
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full rounded-lg"
-      style={{ 
-        minHeight: '400px',
-        position: 'relative',
-        zIndex: 1
-      }}
-    />
+    <div className="w-full h-full relative">
+      <div
+        ref={containerRef}
+        className="w-full h-full rounded-lg"
+        style={{ 
+          minHeight: '400px',
+          position: 'relative',
+          zIndex: 1
+        }}
+      />
+      {renderPaginationControls()}
+    </div>
   )
 }

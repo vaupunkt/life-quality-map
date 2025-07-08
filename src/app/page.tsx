@@ -405,6 +405,43 @@ export default function Home() {
     return count > 0 ? Math.round(totalScore / count) : 0
   }
 
+  // Helper function to count total visible markers
+  const getTotalVisibleMarkers = (): number => {
+    if (!qualityScore?.amenities) return 0
+    
+    let total = 0
+    const amenityKeys = [
+      'kindergartens', 'schools', 'education', 'supermarkets', 'doctors', 
+      'pharmacies', 'culture', 'sports', 'parks', 'transport', 
+      'restaurants', 'shopping', 'finance', 'safety', 'services'
+    ]
+    
+    amenityKeys.forEach(key => {
+      const categoryKey = key === 'kindergartens' ? 'kindergarten' : 
+                         key === 'schools' ? 'schools' :
+                         key === 'education' ? 'education' :
+                         key === 'supermarkets' ? 'supermarkets' :
+                         key === 'doctors' ? 'doctors' :
+                         key === 'pharmacies' ? 'pharmacies' :
+                         key === 'culture' ? 'culture' :
+                         key === 'sports' ? 'sports' :
+                         key === 'parks' ? 'parks' :
+                         key === 'transport' ? 'transport' :
+                         key === 'restaurants' ? 'restaurants' :
+                         key === 'shopping' ? 'shopping' :
+                         key === 'finance' ? 'finance' :
+                         key === 'safety' ? 'safety' :
+                         'services'
+      
+      if (categoryVisibility[categoryKey] !== false) {
+        const amenities = qualityScore.amenities?.[key as keyof typeof qualityScore.amenities]
+        total += amenities?.length || 0
+      }
+    })
+    
+    return total
+  }
+
   const toggleGroupVisibility = (groupKey: string) => {
     setCategoryGroups(prev => {
       const newEnabled = !prev[groupKey].enabled
@@ -1457,6 +1494,12 @@ export default function Home() {
                         <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
                         <span><strong>Farbige Marker:</strong> Zeigen nur die von unserer API erfassten Einrichtungen im gewählten Radius ({radiusSettings.activeRadius === 'walking' ? `${radiusSettings.walking}m` : radiusSettings.activeRadius === 'cycling' ? `${radiusSettings.cycling/1000}km` : `${radiusSettings.driving/1000}km`})</span>
                       </div>
+                      {getTotalVisibleMarkers() > 80 && (
+                        <div className="flex items-start gap-2">
+                          <span className={`mt-0.5 ${darkMode ? 'text-emerald-400' : 'text-emerald-500'}`}>•</span>
+                          <span><strong>Performance-Modus:</strong> {getTotalVisibleMarkers()} Marker gefunden - wird seitenweise angezeigt (max. 80 pro Seite) für bessere Performance</span>
+                        </div>
+                      )}
                       <div className="flex items-start gap-2">
                         <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
                         <span><strong>Fehlende Marker?</strong> Möglicherweise unvollständige OpenStreetMap-Daten oder außerhalb des Suchradius</span>
