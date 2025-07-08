@@ -120,7 +120,8 @@ async function calculateQualityScore(
     finance: 0,
     safety: 0,
     services: 0,
-    education: 0
+    education: 0,
+    hairdresser: 0
   }
 
   const amenityDetails = {
@@ -138,7 +139,8 @@ async function calculateQualityScore(
     finance: [] as Array<{lat: number, lng: number, name: string, type: string}>,
     safety: [] as Array<{lat: number, lng: number, name: string, type: string}>,
     services: [] as Array<{lat: number, lng: number, name: string, type: string}>,
-    education: [] as Array<{lat: number, lng: number, name: string, type: string}>
+    education: [] as Array<{lat: number, lng: number, name: string, type: string}>,
+    hairdresser: [] as Array<{lat: number, lng: number, name: string}>
   }
 
   try {
@@ -298,8 +300,8 @@ async function calculateQualityScore(
       }
       
       if (tags.shop === 'hairdresser') {
-        amenityCounts.services++
-        amenityDetails.services.push({ lat: elementLat, lng: elementLng, name, type: 'hairdresser' })
+        amenityCounts.hairdresser++
+        amenityDetails.hairdresser.push({ lat: elementLat, lng: elementLng, name })
       }
       
       if (['university', 'college'].includes(tags.amenity)) {
@@ -324,6 +326,7 @@ async function calculateQualityScore(
     amenityDetails.safety = removeDuplicates(amenityDetails.safety)
     amenityDetails.services = removeDuplicates(amenityDetails.services)
     amenityDetails.education = removeDuplicates(amenityDetails.education)
+    amenityDetails.hairdresser = removeDuplicates(amenityDetails.hairdresser)
 
     // Aktualisiere die Zähler basierend auf den gefilterten Daten
     amenityCounts.kindergarten = amenityDetails.kindergartens.length
@@ -341,7 +344,7 @@ async function calculateQualityScore(
     amenityCounts.safety = amenityDetails.safety.length
     amenityCounts.services = amenityDetails.services.length
     amenityCounts.education = amenityDetails.education.length
-
+    amenityCounts.hairdresser = amenityDetails.hairdresser.length
 
     // Calculate scores (0-10 scale)
     const kindergartenScore = Math.min(10, Math.round(amenityCounts.kindergarten * 2))
@@ -359,7 +362,8 @@ async function calculateQualityScore(
     const safetyScore = Math.min(10, Math.round(amenityCounts.safety * 2))
     const servicesScore = Math.min(10, Math.round(amenityCounts.services * 1.5))
     const educationScore = Math.min(10, Math.round(amenityCounts.education * 1.5))
-    
+    const hairdresserScore = Math.min(10, Math.round(amenityCounts.hairdresser * 2))
+
     // Mock scores for noise and traffic (would need specialized APIs)
     const noiseScore = Math.floor(Math.random() * 5) + 3 // 3-7 range
     const trafficScore = Math.floor(Math.random() * 5) + 3 // 3-7 range
@@ -451,6 +455,7 @@ async function calculateQualityScore(
       safety: safetyScore,
       services: servicesScore,
       education: educationScore,
+      hairdresser: hairdresserScore,
       noise: noiseScore,
       traffic: trafficScore,
       address: address,
@@ -479,6 +484,7 @@ async function calculateQualityScore(
       safety: 8,
       services: 6,
       education: 7,
+      hairdresser: 5,
       noise: 4,
       traffic: 5,
       address: address,
@@ -499,7 +505,8 @@ async function calculateQualityScore(
         finance: [],
         safety: [],
         services: [],
-        education: []
+        education: [],
+        hairdresser: []
       },
     }
   }
