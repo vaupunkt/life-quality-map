@@ -2307,7 +2307,7 @@ function HomeContent() {
                     />
                   </div>
                   
-                  {/* Info-Box für Benutzer */}
+                  {/* Info box for users */}
                   <div className={`mt-6 p-4 rounded-xl border ${
                     darkMode 
                       ? 'bg-gradient-to-r from-blue-900/50 to-green-900/50 border-blue-700 text-blue-300' 
@@ -2317,26 +2317,26 @@ function HomeContent() {
                       darkMode ? 'text-blue-200' : 'text-blue-800'
                     }`}>
                       <span className="text-lg">ℹ️</span>
-                      Karteninformation
+                      Map information
                     </h4>
                     <div className="text-sm space-y-2">
                       <div className="flex items-start gap-2">
                         <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
-                        <span><strong>Basiskarte:</strong> Zeigt alle OpenStreetMap-Daten (Gebäude, Straßen, etc.)</span>
+                        <span><strong>Base map:</strong> Shows all OpenStreetMap data (buildings, streets, etc.)</span>
                       </div>
                       <div className="flex items-start gap-2">
                         <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
-                        <span><strong>Farbige Marker:</strong> Zeigen nur die von unserer API erfassten Einrichtungen im gewählten Radius ({radiusSettings.activeRadius === 'walking' ? `${radiusSettings.walking}m` : radiusSettings.activeRadius === 'cycling' ? `${radiusSettings.cycling/1000}km` : `${radiusSettings.driving/1000}km`})</span>
+                        <span><strong>Colored markers:</strong> Only show the facilities detected by our API within the selected radius ({radiusSettings.activeRadius === 'walking' ? `${radiusSettings.walking}m` : radiusSettings.activeRadius === 'cycling' ? `${radiusSettings.cycling/1000}km` : `${radiusSettings.driving/1000}km`})</span>
                       </div>
                       {getTotalVisibleMarkers() > 80 && (
                         <div className="flex items-start gap-2">
                           <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
-                          <span><strong>Performance-Modus:</strong> {getTotalVisibleMarkers()} Marker gefunden - wird seitenweise angezeigt (max. 80 pro Seite) für bessere Performance</span>
+                          <span><strong>Performance mode:</strong> {getTotalVisibleMarkers()} markers found - displayed in pages (max. 80 per page) for better performance</span>
                         </div>
                       )}
                       <div className="flex items-start gap-2">
                         <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
-                        <span><strong>Fehlende Marker?</strong> Möglicherweise unvollständige OpenStreetMap-Daten oder außerhalb des Suchradius</span>
+                        <span><strong>Missing markers?</strong> Possibly incomplete OpenStreetMap data or outside the search radius</span>
                       </div>
                     </div>
                   </div>

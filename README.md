@@ -13,6 +13,12 @@ Eine interaktive Next.js-Anwendung zur Bewertung der Lebensqualität basierend a
   - Ärzte und Apotheken in der Nähe
   - Lärmbelastung (simuliert)
   - Verkehrsbelastung (simuliert)
+- **Gewichtungspresets**: Vordefinierte Gewichtungen für verschiedene Lebenssituationen
+- **Umwelt- und Klimadaten**: Integration von Klimadaten zur Bewertung der Umgebung
+- **Kategoriegruppen**: Gruppierung von Kategorien für eine bessere Übersicht
+- **Darkmode**: Unterstützung für dunkle und helle Designs
+- **Teilen/Copy-URL**: Möglichkeit, Ergebnisse zu teilen oder die URL zu kopieren
+- **Settings-Modal**: Anpassung der Gewichtungen und Einstellungen
 
 ## Technologien
 
@@ -23,7 +29,6 @@ Eine interaktive Next.js-Anwendung zur Bewertung der Lebensqualität basierend a
 - **OpenStreetMap** für Kartendaten
 - **Overpass API** für Daten über nahegelegene Einrichtungen
 - **Nominatim API** für Geocoding
-- 
 
 ## Installation
 
@@ -47,6 +52,9 @@ npm run dev
    - Einen Gesamtscore für die Lebensqualität
    - Einzelbewertungen für verschiedene Kategorien
    - Die Position auf der interaktiven Karte
+4. Nutzen Sie die Gewichtungspresets oder passen Sie die Gewichtungen manuell an
+5. Erkunden Sie die Umwelt- und Klimadaten für die ausgewählte Adresse
+6. Teilen Sie die Ergebnisse oder kopieren Sie die URL für späteren Zugriff
 
 ## API-Endpoints
 
