@@ -1092,16 +1092,15 @@ export default function Home() {
                   }`}>
                     <input
                       type="checkbox"
-                      checked={showHeatmap}
-                      onChange={(e) => setShowHeatmap(e.target.checked)}
+                      checked={showEnviromentData}
+                      onChange={(e) => setShowEnviromentData(e.target.checked)}
                       className="mr-3 text-emerald-500 focus:ring-emerald-400 rounded"
-                      disabled={!showEnviromentData}
                     />
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">🌡️</span>
+                      <span className="text-lg">�</span>
                       <span className={`font-medium ${
-                        darkMode ? 'text-gray-400' : 'text-gray-500'
-                      }`}>Umweltdaten anzeigen (deaktiviert)</span>
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>Umweltdaten anzeigen</span>
                     </div>
                   </label>
                   <button
@@ -1122,7 +1121,7 @@ export default function Home() {
                     : 'bg-blue-50 border-blue-200 text-blue-700'
                 }`}>
                   <p className="text-xs">
-                    <strong>💡 Tipp:</strong> Umweltdaten zeigen Klimadaten basierend auf dem Klimastatusbericht 2024
+                    <strong>💡 Tipp:</strong> Umweltdaten zeigen Klimadaten und Lebenszufriedenheit basierend auf offiziellen Statistiken
                   </p>
                 </div>
               </div>
@@ -1192,7 +1191,7 @@ export default function Home() {
                     )}
                     
                     {/* Bundesland und Lebenszufriedenheit */}
-                    {qualityScore.bundesland && (
+                    {showEnviromentData && qualityScore.bundesland && (
                       <div className={`mt-4 p-3 rounded-lg ${
                         darkMode ? 'bg-slate-700/50' : 'bg-blue-50'
                       } border ${

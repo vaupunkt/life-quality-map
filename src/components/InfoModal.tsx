@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface InfoModalProps {
   isOpen: boolean
@@ -9,15 +9,37 @@ interface InfoModalProps {
 }
 
 export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'scoring' | 'categories' | 'weighting' | 'faq'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'scoring' | 'categories' | 'weighting' | 'environment' | 'faq'>('overview')
+
+  // ESC-Taste Handler
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+    
+    if (isOpen) {
+      document.addEventListener('keydown', handleEsc)
+      return () => document.removeEventListener('keydown', handleEsc)
+    }
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
+
+  // Handler für Klick außerhalb des Modals
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
 
   const tabs = [
     { id: 'overview', label: 'Übersicht', icon: '📊' },
     { id: 'scoring', label: 'Bewertungssystem', icon: '🧮' },
     { id: 'categories', label: 'Kategorien', icon: '📋' },
     { id: 'weighting', label: 'Gewichtungen', icon: '⚖️' },
+    { id: 'environment', label: 'Umweltdaten', icon: '🌍' },
     { id: 'faq', label: 'FAQ', icon: '❓' }
   ]
 
@@ -41,7 +63,10 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
   ]
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+    >
       <div className={`max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl ${
         darkMode ? 'bg-slate-800 text-gray-200' : 'bg-white text-gray-800'
       }`}>
@@ -125,7 +150,8 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                     <li>• Vorgefertigte Gewichtungsprofile</li>
                     <li>• Interaktive Karte mit POI-Anzeige</li>
                     <li>• Detaillierte Bewertungsaufschlüsselung</li>
-                    <li>• Integration von Bundesland-Lebenszufriedenheit</li>
+                    <li>• Umweltdaten: Klimastatistiken + Lebenszufriedenheit</li>
+                    <li>• Bundesland-spezifische Datenintegration</li>
                   </ul>
                 </div>
               </div>
@@ -134,7 +160,21 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                 darkMode ? 'bg-slate-700' : 'bg-blue-50'
               }`}>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <span>🍀</span>
+                  <span>�</span>
+                  Umweltdaten Integration
+                </h4>
+                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Die Anwendung kombiniert offizielle Klimadaten (Temperatur, Niederschlag, Sonnenschein) 
+                  mit regionaler Lebenszufriedenheit für eine umfassende Umweltbewertung. 
+                  Aktivieren Sie den Umweltdaten-Toggle für detaillierte Einblicke.
+                </p>
+              </div>
+
+              <div className={`p-4 rounded-lg border-l-4 border-blue-500 ${
+                darkMode ? 'bg-slate-700' : 'bg-blue-50'
+              }`}>
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <span>�🍀</span>
                   SKL Glücksatlas Integration
                 </h4>
                 <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -467,6 +507,177 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                     Kostenlose APIs können langsam oder zeitweise nicht verfügbar sein. In einer Produktionsumgebung würden 
                     kommerzielle APIs mit SLA bessere Zuverlässigkeit bieten.
                   </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'environment' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
+                  <span>🌍</span>
+                  Umweltdaten im Detail
+                </h3>
+                <p className={`mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Die Umweltdaten kombinieren offizielle Klimastatistiken mit regionaler Lebenszufriedenheit 
+                  für eine umfassende Bewertung der Lebensqualität.
+                </p>
+              </div>
+
+              {/* SKL Glücksatlas Sektion */}
+              <div>
+                <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <span>🍀</span>
+                  SKL Glücksatlas - Lebenszufriedenheit
+                </h4>
+                
+                <div className={`p-4 rounded-lg border-l-4 border-blue-500 ${
+                  darkMode ? 'bg-blue-900/20' : 'bg-blue-50'
+                } mb-4`}>
+                  <h5 className="font-semibold text-blue-600 mb-2">Datenquelle und Methodik</h5>
+                  <ul className="text-sm space-y-1">
+                    <li>• <strong>Jährliche Studie</strong> zur subjektiven Lebenszufriedenheit in Deutschland</li>
+                    <li>• <strong>Skala 0-10:</strong> Bewertung der allgemeinen Lebenszufriedenheit</li>
+                    <li>• <strong>16 Bundesländer</strong> mit individuellen Durchschnittswerten</li>
+                    <li>• <strong>Wissenschaftliche Basis:</strong> Repräsentative Befragungen und Datenanalyse</li>
+                  </ul>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                    <h6 className="font-semibold mb-2 text-green-600">🏆 Höchste Werte</h6>
+                    <div className="text-sm space-y-1">
+                      <div>Hamburg: <span className="font-bold">7,38/10</span></div>
+                      <div>Bayern: <span className="font-bold">7,23/10</span></div>
+                      <div>Schleswig-Holstein: <span className="font-bold">7,23/10</span></div>
+                    </div>
+                  </div>
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                    <h6 className="font-semibold mb-2 text-orange-600">📉 Niedrigste Werte</h6>
+                    <div className="text-sm space-y-1">
+                      <div>Mecklenburg-Vorpommern: <span className="font-bold">6,17/10</span></div>
+                      <div>Berlin: <span className="font-bold">6,63/10</span></div>
+                      <div>Saarland: <span className="font-bold">6,73/10</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`p-4 rounded-lg font-mono text-sm ${
+                  darkMode ? 'bg-slate-700' : 'bg-gray-100'
+                } mb-4`}>
+                  <strong>Integration in Gesamtbewertung:</strong><br/>
+                  Lebenszufriedenheit × 0.1 × Gesamtgewichtung = 10% der Bewertung
+                </div>
+              </div>
+
+              {/* Klimadaten Sektion */}
+              <div>
+                <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <span>🌤️</span>
+                  Klimadaten - Klimastatusbericht 2024
+                </h4>
+                
+                <div className={`p-4 rounded-lg border-l-4 border-green-500 ${
+                  darkMode ? 'bg-green-900/20' : 'bg-green-50'
+                } mb-4`}>
+                  <h5 className="font-semibold text-green-600 mb-2">Datenquelle und Parameter</h5>
+                  <ul className="text-sm space-y-1">
+                    <li>• <strong>Deutscher Wetterdienst (DWD):</strong> Offizielle Klimastatistiken 2024</li>
+                    <li>• <strong>Jahresdurchschnittstemperatur</strong> in °C</li>
+                    <li>• <strong>Jährlicher Niederschlag</strong> in mm</li>
+                    <li>• <strong>Jährliche Sonnenscheindauer</strong> in Stunden</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-4">
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                    <h6 className="font-semibold mb-2 flex items-center gap-2">
+                      <span>🌡️</span>
+                      Temperatur-Bewertung (40% Gewichtung)
+                    </h6>
+                    <div className="text-sm space-y-2">
+                      <div><strong>Idealbereich:</strong> 10-15°C = maximaler Score</div>
+                      <div><strong>Zu kalt (&lt;8°C):</strong> Score = max(0, 10 - |10-Temperatur| × 2)</div>
+                      <div><strong>Zu warm (&gt;15°C):</strong> Score = max(0, 10 - |Temperatur-12| × 1.5)</div>
+                      <div className="text-green-600"><strong>Beispiel:</strong> Hamburg 11,3°C → Score: 10/10</div>
+                    </div>
+                  </div>
+
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                    <h6 className="font-semibold mb-2 flex items-center gap-2">
+                      <span>🌧️</span>
+                      Niederschlag-Bewertung (30% Gewichtung)
+                    </h6>
+                    <div className="text-sm space-y-2">
+                      <div><strong>Idealbereich:</strong> 700-900mm/Jahr = maximaler Score</div>
+                      <div><strong>Zu trocken (&lt;600mm):</strong> Score = (Niederschlag ÷ 600) × 10</div>
+                      <div><strong>Zu nass (&gt;1000mm):</strong> Score = 10 - (Niederschlag-1000) ÷ 100</div>
+                      <div className="text-orange-600"><strong>Beispiel:</strong> Saarland 1204,9mm → Score: 8/10</div>
+                    </div>
+                  </div>
+
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                    <h6 className="font-semibold mb-2 flex items-center gap-2">
+                      <span>☀️</span>
+                      Sonnenschein-Bewertung (30% Gewichtung)
+                    </h6>
+                    <div className="text-sm space-y-2">
+                      <div><strong>Bewertung:</strong> Mehr Sonnenstunden = höherer Score</div>
+                      <div><strong>Maximum:</strong> 2000h/Jahr = 10/10 Punkte</div>
+                      <div><strong>Formel:</strong> Score = min(10, (Sonnenstunden ÷ 2000) × 10)</div>
+                      <div className="text-green-600"><strong>Beispiel:</strong> Berlin 1914,5h → Score: 10/10</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`p-4 rounded-lg font-mono text-sm ${
+                  darkMode ? 'bg-slate-700' : 'bg-gray-100'
+                } mt-4`}>
+                  <strong>Klima-Gesamtscore:</strong><br/>
+                  (Temperatur × 0.4) + (Niederschlag × 0.3) + (Sonnenschein × 0.3)
+                </div>
+              </div>
+
+              {/* Technische Details */}
+              <div>
+                <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <span>⚙️</span>
+                  Technische Integration
+                </h4>
+                
+                <div className="space-y-3">
+                  <div className={`p-4 rounded-lg border-l-4 border-purple-500 ${
+                    darkMode ? 'bg-purple-900/20' : 'bg-purple-50'
+                  }`}>
+                    <h5 className="font-semibold text-purple-600 mb-2">Automatische Bundesland-Erkennung</h5>
+                    <ol className="text-sm space-y-1 list-decimal list-inside">
+                      <li>Koordinaten aus Adresseingabe extrahieren</li>
+                      <li>Nominatim Reverse Geocoding API abfragen</li>
+                      <li>Bundesland aus API-Response extrahieren</li>
+                      <li>Daten aus lokalen JSON-Dateien laden</li>
+                      <li>Fallback für alternative Schreibweisen</li>
+                    </ol>
+                  </div>
+
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                    <h5 className="font-semibold mb-2">🎯 Anwendung in der Bewertung</h5>
+                    <ul className="text-sm space-y-1">
+                      <li>• <strong>Toggle-Steuerung:</strong> Umweltdaten müssen aktiviert werden</li>
+                      <li>• <strong>Bundesland-Badge:</strong> Zeigt erkanntes Bundesland und Lebenszufriedenheit</li>
+                      <li>• <strong>Klimadaten-Panel:</strong> Detaillierte Aufschlüsselung aller Klimawerte</li>
+                      <li>• <strong>Farbkodierung:</strong> Grün (7-10), Gelb (4-6), Rot (0-3)</li>
+                    </ul>
+                  </div>
+
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                    <h5 className="font-semibold mb-2">🔄 Aktualisierung der Daten</h5>
+                    <ul className="text-sm space-y-1">
+                      <li>• <strong>Glücksatlas:</strong> Jährliche Updates bei neuen Veröffentlichungen</li>
+                      <li>• <strong>Klimadaten:</strong> Jährliche Updates mit neuem Klimastatusbericht</li>
+                      <li>• <strong>Lokale Speicherung:</strong> JSON-Dateien für schnellen Zugriff</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>

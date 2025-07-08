@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -22,7 +22,28 @@ export default function SettingsModal({
 }: SettingsModalProps) {
   const [tempSettings, setTempSettings] = useState(radiusSettings)
 
+  // ESC-Taste Handler
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+    
+    if (isOpen) {
+      document.addEventListener('keydown', handleEsc)
+      return () => document.removeEventListener('keydown', handleEsc)
+    }
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
+
+  // Handler für Klick außerhalb des Modals
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
 
   const handleSave = () => {
     onSave(tempSettings)
@@ -40,7 +61,10 @@ export default function SettingsModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Entfernungseinstellungen</h2>
         
