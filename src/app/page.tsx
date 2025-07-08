@@ -93,11 +93,24 @@ export default function Home() {
   const [recalculatingScore, setRecalculatingScore] = useState(false)
   const [qualityScore, setQualityScore] = useState<QualityScore | null>(null)
   const [error, setError] = useState('')
-  const [showEnviromentData, setShowEnviromentData] = useState(false)
+  const [showEnviromentData, setShowEnviromentData] = useState(true)
   const [showHeatmap, setShowHeatmap] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
+  
+  // Mobile Detection
+  const [isMobile, setIsMobile] = useState(false)
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+  
   const [radiusSettings, setRadiusSettings] = useState({
     walking: 500,     // 500m walking distance
     cycling: 1500,    // 1.5km cycling distance
@@ -464,6 +477,31 @@ export default function Home() {
   const generateShareImage = async () => {
     if (!qualityScore) return
     
+    // Helper function zum Laden von OSM-Kacheln
+    const loadMapTile = async (lat: number, lng: number, zoom: number): Promise<HTMLImageElement | null> => {
+      try {
+        // Berechne Kachel-Koordinaten für bessere Zentrierung
+        const tileX = Math.floor((lng + 180) / 360 * Math.pow(2, zoom))
+        const tileY = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom))
+        
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        
+        return new Promise((resolve) => {
+          img.onload = () => resolve(img)
+          img.onerror = () => resolve(null)
+          // Verwende einen niedrigeren Zoom für bessere Übersicht
+          img.src = `https://tile.openstreetmap.org/${Math.min(zoom, 13)}/${tileX}/${tileY}.png`
+          
+          // Timeout nach 2 Sekunden
+          setTimeout(() => resolve(null), 2000)
+        })
+      } catch (error) {
+        console.error('Fehler beim Laden der Karte:', error)
+        return null
+      }
+    }
+    
     // Erstelle ein virtuelles Canvas Element im Instagram Story Format (9:16)
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
@@ -518,35 +556,58 @@ export default function Home() {
     ctx.lineWidth = 3
     ctx.stroke()
     
-    // Header (größer)
+    // Header (noch größer und deutlicher)
     ctx.fillStyle = darkMode ? '#ffffff' : '#1f2937'
-    ctx.font = 'bold 80px system-ui'
+    ctx.font = 'bold 100px system-ui'
     ctx.textAlign = 'center'
-    ctx.fillText('🍀', canvas.width / 2, containerY + 100)
+    ctx.fillText('🍀', canvas.width / 2, containerY + 120)
     
-    ctx.font = 'bold 56px system-ui'
-    ctx.fillText('Lebensqualitäts-Analyse', canvas.width / 2, containerY + 180)
+    ctx.font = 'bold 72px system-ui'
+    ctx.fillText('Lebensqualitäts-Analyse', canvas.width / 2, containerY + 220)
     
     // Adresse (größer)
     let displayAddress = qualityScore.address
-    if (displayAddress.length > 30) {
-      displayAddress = displayAddress.substring(0, 30) + '...'
+    if (displayAddress.length > 25) {
+      displayAddress = displayAddress.substring(0, 25) + '...'
     }
     
-    ctx.font = '36px system-ui'
+    ctx.font = 'bold 48px system-ui'
     ctx.fillStyle = '#10b981'
-    ctx.fillText(displayAddress, canvas.width / 2, containerY + 240)
+    ctx.fillText(displayAddress, canvas.width / 2, containerY + 290)
     
-    // Score Circle (größer)
+    // Alle Kategorien sammeln und sortieren (früher definiert)
+    const allCategories = [
+      { label: 'Kindergärten', emoji: '🎓', score: qualityScore.kindergarten },
+      { label: 'Schulen', emoji: '🏫', score: qualityScore.schools },
+      { label: 'Hochschulen', emoji: '🎓', score: qualityScore.education },
+      { label: 'Supermärkte', emoji: '🛒', score: qualityScore.supermarkets },
+      { label: 'Ärzte', emoji: '🏥', score: qualityScore.doctors },
+      { label: 'Apotheken', emoji: '💊', score: qualityScore.pharmacies },
+      { label: 'Kultur', emoji: '🎭', score: qualityScore.culture },
+      { label: 'Sport', emoji: '⚽', score: qualityScore.sports },
+      { label: 'Parks', emoji: '🌳', score: qualityScore.parks },
+      { label: 'ÖPNV', emoji: '🚌', score: qualityScore.transport },
+      { label: 'Fahrradwege', emoji: '🚲', score: qualityScore.cycling },
+      { label: 'Restaurants', emoji: '🍽️', score: qualityScore.restaurants }
+    ].sort((a, b) => b.score - a.score)
+    
+    // Top 3 und Flop 3
+    const topCategories = allCategories.slice(0, 3)
+    const flopCategories = allCategories.slice(-3).reverse()
+    
+    // Top-Kategorien starten später (nach dem Score)
+    const topStartY = containerY + 600
+    
+    // Score Circle zwischen Ortsname und TOP 3 (größer)
     const scoreCenterX = canvas.width / 2
-    const scoreCenterY = containerY + 360
-    const scoreRadius = 130
+    const scoreCenterY = containerY + 410
+    const scoreRadius = 90
     
     // Score-Kreis mit Gradient und Schatten
     ctx.save()
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.25)'
-    ctx.shadowBlur = 20
-    ctx.shadowOffsetY = 10
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
+    ctx.shadowBlur = 25
+    ctx.shadowOffsetY = 12
     
     const scoreGradient = ctx.createRadialGradient(scoreCenterX, scoreCenterY, 0, scoreCenterX, scoreCenterY, scoreRadius)
     const score = qualityScore.overall
@@ -567,43 +628,20 @@ export default function Home() {
     ctx.fill()
     ctx.restore()
     
-    // Score-Text (größer)
+    // Score-Text (angepasst an kleineren Kreis)
     ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 110px system-ui'
+    ctx.font = 'bold 80px system-ui'
     ctx.textAlign = 'center'
     ctx.shadowColor = 'rgba(0, 0, 0, 0.4)'
-    ctx.shadowBlur = 4
-    ctx.fillText(Math.round(score).toString(), scoreCenterX, scoreCenterY + 35)
+    ctx.shadowBlur = 6
+    ctx.fillText(Math.round(score).toString(), scoreCenterX, scoreCenterY + 25)
     
     ctx.shadowColor = 'transparent'
-    ctx.font = '32px system-ui'
-    ctx.fillStyle = darkMode ? '#d1d5db' : '#374151'
-    ctx.fillText('von 10', scoreCenterX, scoreCenterY + 80)
-    
-    // Alle Kategorien sammeln und sortieren
-    const allCategories = [
-      { label: 'Kindergärten', emoji: '🎓', score: qualityScore.kindergarten },
-      { label: 'Schulen', emoji: '🏫', score: qualityScore.schools },
-      { label: 'Hochschulen', emoji: '🎓', score: qualityScore.education },
-      { label: 'Supermärkte', emoji: '🛒', score: qualityScore.supermarkets },
-      { label: 'Ärzte', emoji: '🏥', score: qualityScore.doctors },
-      { label: 'Apotheken', emoji: '💊', score: qualityScore.pharmacies },
-      { label: 'Kultur', emoji: '🎭', score: qualityScore.culture },
-      { label: 'Sport', emoji: '⚽', score: qualityScore.sports },
-      { label: 'Parks', emoji: '🌳', score: qualityScore.parks },
-      { label: 'ÖPNV', emoji: '🚌', score: qualityScore.transport },
-      { label: 'Fahrradwege', emoji: '🚲', score: qualityScore.cycling },
-      { label: 'Restaurants', emoji: '🍽️', score: qualityScore.restaurants }
-    ].sort((a, b) => b.score - a.score)
-    
-    // Top 3 und Flop 3
-    const topCategories = allCategories.slice(0, 3)
-    const flopCategories = allCategories.slice(-3).reverse()
-    
-    // Top-Kategorien (größer)
-    const topStartY = containerY + 520
+    ctx.font = 'bold 32px system-ui'
+    ctx.fillStyle = darkMode ? '#e2e8f0' : '#c8ced7'
+    ctx.fillText('von 10', scoreCenterX, scoreCenterY + 55)
     ctx.fillStyle = darkMode ? '#10b981' : '#059669'
-    ctx.font = 'bold 42px system-ui'
+    ctx.font = 'bold 48px system-ui'
     ctx.textAlign = 'center'
     ctx.fillText('🏆 TOP 3', canvas.width / 2, topStartY)
     
@@ -617,11 +655,14 @@ export default function Home() {
       roundRect(ctx, itemX, y - 35, itemWidth, 70, 16)
       ctx.fill()
       
-      // Emoji (größer und ohne Transparenz)
+      // Emoji (größer und vollständig sichtbar)
+      ctx.save()
       ctx.globalAlpha = 1.0
-      ctx.font = '40px system-ui'
+      ctx.font = '48px system-ui'
       ctx.textAlign = 'left'
-      ctx.fillText(cat.emoji, itemX + 30, y + 10)
+      ctx.fillStyle = '#000000'
+      ctx.fillText(cat.emoji, itemX + 30, y + 15)
+      ctx.restore()
       
       // Score Badge (größer)
       ctx.fillStyle = '#10b981'
@@ -629,21 +670,21 @@ export default function Home() {
       ctx.fill()
       
       ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 28px system-ui'
+      ctx.font = 'bold 32px system-ui'
       ctx.textAlign = 'center'
       ctx.fillText(cat.score.toString(), itemX + itemWidth - 55, y + 8)
       
       // Label (größer)
-      ctx.fillStyle = darkMode ? '#e2e8f0' : '#1f2937'
-      ctx.font = 'bold 32px system-ui'
+      ctx.fillStyle = darkMode ? '#ffffff' : '#000000'
+      ctx.font = 'bold 36px system-ui'
       ctx.textAlign = 'left'
-      ctx.fillText(cat.label, itemX + 100, y + 10)
+      ctx.fillText(cat.label, itemX + 110, y + 12)
     })
     
     // Flop-Kategorien (größer)
-    const flopStartY = topStartY + 340
+    const flopStartY = topStartY + 380
     ctx.fillStyle = darkMode ? '#ef4444' : '#dc2626'
-    ctx.font = 'bold 42px system-ui'
+    ctx.font = 'bold 48px system-ui'
     ctx.textAlign = 'center'
     ctx.fillText('📉 FLOP 3', canvas.width / 2, flopStartY)
     
@@ -653,15 +694,18 @@ export default function Home() {
       const itemWidth = containerWidth - 100
       
       // Item Background
-      ctx.fillStyle = darkMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)'
+      ctx.fillStyle = darkMode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.15)'
       roundRect(ctx, itemX, y - 35, itemWidth, 70, 16)
       ctx.fill()
       
-      // Emoji (größer und ohne Transparenz)
+      // Emoji (größer und vollständig opaque)
+      ctx.save()
       ctx.globalAlpha = 1.0
-      ctx.font = '40px system-ui'
+      ctx.font = '48px system-ui'
       ctx.textAlign = 'left'
-      ctx.fillText(cat.emoji, itemX + 30, y + 10)
+      ctx.fillStyle = '#000000'
+      ctx.fillText(cat.emoji, itemX + 30, y + 15)
+      ctx.restore()
       
       // Score Badge (größer)
       const badgeColor = cat.score >= 5 ? '#f59e0b' : '#ef4444'
@@ -670,118 +714,131 @@ export default function Home() {
       ctx.fill()
       
       ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 28px system-ui'
+      ctx.font = 'bold 32px system-ui'
       ctx.textAlign = 'center'
       ctx.fillText(cat.score.toString(), itemX + itemWidth - 55, y + 8)
       
       // Label (größer)
-      ctx.fillStyle = darkMode ? '#e2e8f0' : '#1f2937'
-      ctx.font = 'bold 32px system-ui'
+      ctx.fillStyle = darkMode ? '#ffffff' : '#000000'
+      ctx.font = 'bold 36px system-ui'
       ctx.textAlign = 'left'
-      ctx.fillText(cat.label, itemX + 100, y + 10)
+      ctx.fillText(cat.label, itemX + 110, y + 12)
     })
     
-    // Deutlich sichtbarere Mini-Karte mit höherem Kontrast
-    const mapY = flopStartY + 340
-    const mapHeight = 280
-    const mapWidth = containerWidth - 100
-    const mapX = containerX + 50
+    // Quadratische Karte links und Call-to-Action rechts
+    const mapSize = 280  // Quadratische Größe
+    const mapY = flopStartY + 360
+    const mapX = containerX + 50  // Links im Container
     
-    // Karten-Hintergrund (heller/dunkler für besseren Kontrast)
-    ctx.fillStyle = darkMode ? '#0f172a' : '#ffffff'
-    roundRect(ctx, mapX, mapY, mapWidth, mapHeight, 20)
-    ctx.fill()
+    // Call-to-Action rechts neben der Karte
+    const ctaX = mapX + mapSize + 50  // 50px Abstand zur Karte
+    const ctaY = mapY + mapSize / 2   // Vertikal zentriert zur Karte
+    const ctaWidth = containerWidth - (mapSize + 150)  // Verfügbare Breite rechts
     
-    // Deutlicher Karten-Border
-    ctx.strokeStyle = darkMode ? '#64748b' : '#374151'
-    ctx.lineWidth = 4
-    ctx.stroke()
+    // Call-to-Action Text (mehrzeilig wenn nötig)
+    ctx.fillStyle = '#10b981'
+    ctx.font = 'bold 32px system-ui'
+    ctx.textAlign = 'left'
     
-    // Straßen-Grid (deutlich sichtbarer)
-    ctx.strokeStyle = darkMode ? '#475569' : '#d1d5db'
-    ctx.lineWidth = 6
+    // Text umbrechen
+    const ctaText = '📱 Entdecke die Lebensqualität in deiner Stadt!'
+    const words = ctaText.split(' ')
+    const maxWidth = ctaWidth
+    let line = ''
+    let y = ctaY - 20  // Startposition
     
-    // Horizontale Straßen
-    for (let i = 1; i < 5; i++) {
-      const roadY = mapY + (i * mapHeight / 5)
-      ctx.beginPath()
-      ctx.moveTo(mapX + 30, roadY)
-      ctx.lineTo(mapX + mapWidth - 30, roadY)
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i] + ' '
+      const metrics = ctx.measureText(testLine)
+      if (metrics.width > maxWidth && i > 0) {
+        ctx.fillText(line.trim(), ctaX, y)
+        line = words[i] + ' '
+        y += 40
+      } else {
+        line = testLine
+      }
+    }    ctx.fillText(line.trim(), ctaX, y)
+    
+    // Quadratische OSM-Karte (vereinfacht)
+    // Versuche echte OSM-Kachel zu laden
+    const mapTile = await loadMapTile(qualityScore.lat, qualityScore.lng, 13)
+    
+    if (mapTile) {
+      // Echte OSM-Karte zeichnen (quadratisch)
+      ctx.save()
+      
+      // Clip auf abgerundetes Quadrat
+      roundRect(ctx, mapX, mapY, mapSize, mapSize, 20)
+      ctx.clip()
+      
+      // OSM-Kachel quadratisch einzeichnen 
+      ctx.drawImage(mapTile, mapX, mapY, mapSize, mapSize)
+      
+      ctx.restore()
+      
+      // Border über die Karte
+      ctx.strokeStyle = darkMode ? '#94a3b8' : '#334155'
+      ctx.lineWidth = 6
+      roundRect(ctx, mapX, mapY, mapSize, mapSize, 20)
       ctx.stroke()
-    }
-    
-    // Vertikale Straßen
-    for (let i = 1; i < 5; i++) {
-      const roadX = mapX + (i * mapWidth / 5)
-      ctx.beginPath()
-      ctx.moveTo(roadX, mapY + 30)
-      ctx.lineTo(roadX, mapY + mapHeight - 30)
-      ctx.stroke()
-    }
-    
-    // Zentraler Standort-Marker
-    const centerMapX = mapX + mapWidth / 2
-    const centerMapY = mapY + mapHeight / 2
-    
-    // Radius-Kreis (deutlicher)
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)'
-    ctx.lineWidth = 8
-    ctx.beginPath()
-    ctx.arc(centerMapX, centerMapY, 80, 0, 2 * Math.PI)
-    ctx.stroke()
-    
-    // Größere Einrichtungs-Marker
-    const markerPositions = [
-      { x: centerMapX - 60, y: centerMapY - 50, emoji: '🛒' },
-      { x: centerMapX + 55, y: centerMapY - 60, emoji: '🏥' },
-      { x: centerMapX - 45, y: centerMapY + 60, emoji: '🚌' },
-      { x: centerMapX + 65, y: centerMapY + 40, emoji: '🌳' },
-      { x: centerMapX + 15, y: centerMapY - 75, emoji: '🎓' },
-      { x: centerMapX - 70, y: centerMapY + 20, emoji: '�' }
-    ]
-    
-    markerPositions.forEach(marker => {
-      // Marker Hintergrund (größer)
-      ctx.fillStyle = '#ffffff'
-      ctx.strokeStyle = '#374151'
-      ctx.lineWidth = 3
-      ctx.beginPath()
-      ctx.arc(marker.x, marker.y, 20, 0, 2 * Math.PI)
+    } else {
+      // Fallback: Straßen-Grid wenn OSM nicht lädt
+      ctx.fillStyle = darkMode ? '#1e293b' : '#f8fafc'
+      roundRect(ctx, mapX, mapY, mapSize, mapSize, 20)
       ctx.fill()
+      
+      ctx.strokeStyle = darkMode ? '#94a3b8' : '#334155'
+      ctx.lineWidth = 6
+      roundRect(ctx, mapX, mapY, mapSize, mapSize, 20)
       ctx.stroke()
       
-      // Emoji (größer)
-      ctx.globalAlpha = 1.0
-      ctx.font = '24px system-ui'
-      ctx.textAlign = 'center'
-      ctx.fillText(marker.emoji, marker.x, marker.y + 8)
-    })
+      // Straßen-Grid als Fallback
+      ctx.strokeStyle = darkMode ? '#64748b' : '#94a3b8'
+      ctx.lineWidth = 8
+      
+      for (let i = 1; i < 5; i++) {
+        const roadY = mapY + (i * mapSize / 5)
+        ctx.beginPath()
+        ctx.moveTo(mapX + 30, roadY)
+        ctx.lineTo(mapX + mapSize - 30, roadY)
+        ctx.stroke()
+      }
+      
+      for (let i = 1; i < 5; i++) {
+        const roadX = mapX + (i * mapSize / 5)
+        ctx.beginPath()
+        ctx.moveTo(roadX, mapY + 30)
+        ctx.lineTo(roadX, mapY + mapSize - 30)
+        ctx.stroke()
+      }
+    }
     
-    // Hauptmarker (Standort) - größer
+    // Nur der zentrale Standort-Marker (vereinfacht)
+    const centerMapX = mapX + mapSize / 2
+    const centerMapY = mapY + mapSize / 2
+    
+    // Hauptmarker (Standort) - größer und deutlicher mit Schatten
+    ctx.save()
+    ctx.globalAlpha = 1.0
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'
+    ctx.shadowBlur = 10
+    ctx.shadowOffsetY = 5
+    
     ctx.fillStyle = '#ef4444'
     ctx.strokeStyle = '#ffffff'
-    ctx.lineWidth = 4
+    ctx.lineWidth = 5
     ctx.beginPath()
-    ctx.arc(centerMapX, centerMapY, 25, 0, 2 * Math.PI)
+    ctx.arc(centerMapX, centerMapY, 30, 0, 2 * Math.PI)
     ctx.fill()
     ctx.stroke()
     
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)'
+    ctx.shadowBlur = 3
     ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 24px system-ui'
-    ctx.textAlign = 'center'
-    ctx.fillText('📍', centerMapX, centerMapY + 8)
-    
-    // Karten-Label (größer)
-    ctx.fillStyle = darkMode ? '#94a3b8' : '#64748b'
     ctx.font = 'bold 28px system-ui'
     ctx.textAlign = 'center'
-    ctx.fillText('🗺️ Kartenausschnitt mit Einrichtungen', mapX + mapWidth / 2, mapY + mapHeight + 40)
-    
-    // Footer mit App-Info (größer)
-    ctx.fillStyle = darkMode ? '#64748b' : '#94a3b8'
-    ctx.font = 'bold 24px system-ui'
-    ctx.textAlign = 'center'
-    ctx.fillText('🌐 Lebensqualitäts-Karte', canvas.width / 2, canvas.height - 30)
+    ctx.fillText('📍', centerMapX, centerMapY + 10)
+    ctx.restore()
     
     return canvas.toDataURL('image/png')
   }
@@ -819,21 +876,68 @@ export default function Home() {
         files: [new File([blob], `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`, { type: 'image/png' })]
       }
       
-      // Native Share API verwenden falls verfügbar
-      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-        await navigator.share(shareData)
-      } else {
-        // Fallback: Download des Bildes
-        const link = document.createElement('a')
-        link.download = `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`
-        link.href = imageDataUrl
-        link.click()
-        
-        // URL in Zwischenablage kopieren
-        if (navigator.clipboard) {
-          await navigator.clipboard.writeText(window.location.href)
-          alert('Bild wurde heruntergeladen und URL in die Zwischenablage kopiert!')
+      // Prüfe ob Gerät mobiles Teilen unterstützt
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      
+      // Web Share API versuchen
+      if (navigator.share) {
+        try {
+          // Prüfe was unterstützt wird
+          if (isMobile) {
+            // Mobile: Erst Text+URL teilen
+            await navigator.share({
+              title: shareData.title,
+              text: shareData.text,
+              url: shareData.url
+            })
+            
+            // Frage nach Bild-Download
+            if (confirm('Möchten Sie auch das Bild herunterladen?')) {
+              const link = document.createElement('a')
+              link.download = `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`
+              link.href = imageDataUrl
+              link.click()
+            }
+            return
+          } else {
+            // Desktop: Versuche mit Datei zu teilen
+            if (navigator.canShare && navigator.canShare(shareData)) {
+              await navigator.share(shareData)
+              return
+            } else {
+              // Fallback: nur Text+URL
+              await navigator.share({
+                title: shareData.title,
+                text: shareData.text,
+                url: shareData.url
+              })
+              
+              // Bild separat downloaden
+              const link = document.createElement('a')
+              link.download = `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`
+              link.href = imageDataUrl
+              link.click()
+              return
+            }
+          }
+        } catch (shareError) {
+          console.log('Web Share API fehlgeschlagen:', shareError)
+          // Fallback unten
         }
+      }
+      
+      // Fallback: Download des Bildes + URL kopieren
+      const link = document.createElement('a')
+      link.download = `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`
+      link.href = imageDataUrl
+      link.click()
+      
+      // URL in Zwischenablage kopieren
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(window.location.href)
+        alert('Bild wurde heruntergeladen und URL in die Zwischenablage kopiert!')
+      } else {
+        alert('Bild wurde heruntergeladen!')
       }
     } catch (error) {
       console.error('Fehler beim Teilen:', error)
@@ -1738,7 +1842,7 @@ export default function Home() {
                         </button>
                       </Tooltip>
                       
-                      <Tooltip content="Teile deine Lebensqualitäts-Analyse als Bild mit Freunden und Familie" darkMode={darkMode}>
+                      <Tooltip content={isMobile ? "Teile deine Lebensqualitäts-Analyse mit anderen Apps" : "Teile deine Lebensqualitäts-Analyse als Bild mit Freunden und Familie"} darkMode={darkMode}>
                         <button
                           onClick={handleShare}
                           className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
@@ -1747,10 +1851,40 @@ export default function Home() {
                               : 'bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white'
                           }`}
                         >
-                          <span className="text-xl">📤</span>
-                          <span>Als Bild teilen</span>
+                          <span className="text-xl">{isMobile ? '�' : '�📤'}</span>
+                          <span>{isMobile ? 'Teilen' : 'Als Bild teilen'}</span>
                         </button>
                       </Tooltip>
+                      
+                      {/* Download Button nur auf mobilen Geräten */}
+                      {isMobile && (
+                        <Tooltip content="Lade das Bild der Lebensqualitäts-Analyse herunter" darkMode={darkMode}>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const imageDataUrl = await generateShareImage()
+                                if (imageDataUrl) {
+                                  const link = document.createElement('a')
+                                  link.download = `lebensqualitaet-${qualityScore?.address.replace(/[^a-zA-Z0-9]/g, '-') || 'analyse'}.png`
+                                  link.href = imageDataUrl
+                                  link.click()
+                                }
+                              } catch (error) {
+                                console.error('Fehler beim Herunterladen:', error)
+                                alert('Fehler beim Herunterladen des Bildes')
+                              }
+                            }}
+                            className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
+                              darkMode 
+                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white' 
+                                : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                            }`}
+                          >
+                            <span className="text-xl">💾</span>
+                            <span>Bild downloaden</span>
+                          </button>
+                        </Tooltip>
+                      )}
                     </div>
                   </div>
                 </div>
