@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
-import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import {  useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import SettingsModal from '@/components/SettingsModal'
 import InfoModal from '@/components/InfoModal'
@@ -97,10 +97,7 @@ export default function Home() {
 }
 
 function HomeContent() {
-  const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
-  
   const [address, setAddress] = useState('')
   const [loading, setLoading] = useState(false)
   const [mapLoading, setMapLoading] = useState(false)
@@ -113,7 +110,7 @@ function HomeContent() {
   const [showInfo, setShowInfo] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   
-  // Mobile Detection (verbessert)
+  // Mobile Detection
   const [isMobile, setIsMobile] = useState(false)
   
   useEffect(() => {
@@ -122,7 +119,6 @@ function HomeContent() {
       const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i
       const isMobileDevice = mobileRegex.test(userAgent) || window.innerWidth <= 768
       setIsMobile(isMobileDevice)
-      console.log('Mobile Detection:', isMobileDevice, userAgent) // Debug
     }
     
     checkMobile()
@@ -142,7 +138,6 @@ function HomeContent() {
     activeRadius: 'walking' as 'walking' | 'cycling' | 'driving'
   })
 
-  // Kategorien-Gruppen mit Gewichtung und Reihenfolge
   const [categoryGroups, setCategoryGroups] = useState<{[key: string]: CategoryGroup}>({
     bildung: {
       title: 'Bildung',
@@ -213,7 +208,6 @@ function HomeContent() {
     }
   })
 
-  // State für aufgeklappte Gruppen
   const [expandedGroups, setExpandedGroups] = useState<{[key: string]: boolean}>({
     bildung: false,
     gesundheit: false,
@@ -222,7 +216,6 @@ function HomeContent() {
     alltag: false
   })
 
-  // State für Bearbeiten-Modus der Gruppen
   const [editingGroups, setEditingGroups] = useState<{[key: string]: boolean}>({
     bildung: false,
     gesundheit: false,
@@ -231,14 +224,12 @@ function HomeContent() {
     alltag: false
   })
 
-  // Berechne categoryVisibility basierend auf categoryGroups
   const categoryVisibility = Object.values(categoryGroups).reduce((acc, group) => {
     if (group.enabled) {
       group.categories.forEach(cat => {
         acc[cat.key] = cat.enabled
       })
     } else {
-      // Wenn Gruppe deaktiviert ist, alle Kategorien deaktivieren
       group.categories.forEach(cat => {
         acc[cat.key] = false
       })
@@ -257,15 +248,13 @@ function HomeContent() {
   useEffect(() => {
     if (qualityScore) {
       setRecalculatingScore(true)
-      // Lokale Neuberechnung anstatt API-Call
       const timer = setTimeout(() => {
         const recalculatedScore = recalculateScoreLocally(qualityScore)
-        // Nur State aktualisieren wenn sich der Score tatsächlich geändert hat
         if (recalculatedScore.overall !== qualityScore.overall) {
           setQualityScore(recalculatedScore)
         }
         setRecalculatingScore(false)
-      }, 150) // Kürzere Verzögerung für lokale Berechnung
+      }, 150)
       
       return () => clearTimeout(timer)
     }
@@ -280,7 +269,6 @@ function HomeContent() {
     setError('')
     
     try {
-      // Reverse geocoding to get address
       const reverseResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
         headers: {
           'User-Agent': 'LebensqualitaetsKarte/1.0',
@@ -292,7 +280,6 @@ function HomeContent() {
       
       setAddress(clickedAddress)
       
-      // Calculate quality score
       await calculateQualityScore(lat, lng, clickedAddress)
     } catch (err) {
       setError('Fehler beim Laden der Daten für diesen Ort')
@@ -331,7 +318,6 @@ function HomeContent() {
 
       setQualityScore(scoreData)
       
-      // URL aktualisieren nach erfolgreicher Analyse
       if (addressName) {
         updateURL(addressName)
         console.log('URL updated after quality score calculation:', addressName)
@@ -362,7 +348,7 @@ function HomeContent() {
       // Calculate quality score
       await calculateQualityScore(data.lat, data.lng, address)
       
-      // URL aktualisieren nach erfolgreicher Adresseingabe
+      // Update URL after successful address input
       updateURL(address)
       console.log('URL updated after address submission:', address)
     } catch (err) {
@@ -426,12 +412,12 @@ function HomeContent() {
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 300000 // 5 Minuten Cache
+        maximumAge: 300000 // 5 Minutes Cache
       }
     )
   }
 
-  // URL-Parameter Management mit Meta-Tag Updates
+  // URL parameter management with meta tag updates
   const updateURL = useCallback((address: string) => {
     if (typeof window === 'undefined') return // SSR check
     
@@ -440,14 +426,11 @@ function HomeContent() {
         const cleanAddress = address.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-').toLowerCase()
         const newUrl = `${window.location.origin}${window.location.pathname}?ort=${encodeURIComponent(address)}#${cleanAddress}`
         
-        // Direkte URL-Aktualisierung
         window.history.replaceState(null, '', newUrl)
         console.log('URL updated to:', newUrl)
         
-        // Aktualisiere den Seitentitel
         document.title = `Lebensqualität in ${address} - Lebensqualitäts-Karte`
-        
-        // Aktualisiere Meta-Tags für Social Sharing
+
         updateMetaTags(address)
       } else {
         const newUrl = `${window.location.origin}${window.location.pathname}`
@@ -455,7 +438,6 @@ function HomeContent() {
         console.log('URL reset to:', newUrl)
         document.title = 'Lebensqualitäts-Karte - Entdecke die Lebensqualität in deiner Stadt'
         
-        // Reset Meta-Tags
         updateMetaTags(null)
       }
     } catch (error) {
@@ -463,7 +445,7 @@ function HomeContent() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Update Meta Tags für Social Sharing
+  // Update Meta Tags for Social Sharing
   const updateMetaTags = useCallback((address: string | null) => {
     if (typeof window === 'undefined') return
     
@@ -538,23 +520,18 @@ function HomeContent() {
     }
   }, [])
 
-  // Lade Adresse aus URL beim Start
   useEffect(() => {
     const ortParam = searchParams.get('ort')
     if (ortParam && !address && !qualityScore) {
       const decodedAddress = decodeURIComponent(ortParam)
       setAddress(decodedAddress)
-      // Automatisch analysieren wenn URL-Parameter vorhanden
       handleAddressSearch(decodedAddress)
     }
   }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddressSearch = async (searchAddress: string = address) => {
     if (!searchAddress.trim()) return
-    
-    console.log('Updating URL for address:', searchAddress) // Debug
     updateURL(searchAddress)
-    console.log('New URL:', window.location.href) // Debug
     
     setLoading(true)
     setError('')
@@ -595,10 +572,8 @@ function HomeContent() {
         return new Promise((resolve) => {
           img.onload = () => resolve(img)
           img.onerror = () => resolve(null)
-          // Verwende einen niedrigeren Zoom für bessere Übersicht
           img.src = `https://tile.openstreetmap.org/${Math.min(zoom, 13)}/${tileX}/${tileY}.png`
           
-          // Timeout nach 2 Sekunden
           setTimeout(() => resolve(null), 2000)
         })
       } catch (error) {
@@ -607,7 +582,6 @@ function HomeContent() {
       }
     }
     
-    // Erstelle ein virtuelles Canvas Element im Instagram Story Format (9:16)
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     if (!ctx) return
@@ -615,7 +589,7 @@ function HomeContent() {
     canvas.width = 1080
     canvas.height = 1920
     
-    // Hintergrund mit modernem Gradient
+    // Modern gradient background
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
     if (darkMode) {
       gradient.addColorStop(0, '#0f172a')
@@ -629,7 +603,7 @@ function HomeContent() {
     ctx.fillStyle = gradient
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     
-    // Dekorative Kreise im Hintergrund
+    // Decorative circles in background
     ctx.globalAlpha = 0.08
     for (let i = 0; i < 6; i++) {
       const x = Math.random() * canvas.width
@@ -643,25 +617,25 @@ function HomeContent() {
     }
     ctx.globalAlpha = 1
     
-    // Hauptcontainer mit glassmorphism Effekt
+    // Main container with glassmorphism effect
     const containerPadding = 50
     const containerX = containerPadding
     const containerY = 60
     const containerWidth = canvas.width - (containerPadding * 2)
     const containerHeight = canvas.height - 120
     
-    // Glassmorphism Hintergrund
+    // Glassmorphism background
     ctx.fillStyle = darkMode ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.92)'
     ctx.filter = 'blur(0px)'
     roundRect(ctx, containerX, containerY, containerWidth, containerHeight, 32)
     ctx.fill()
     
-    // Border für den Container
+    // Border for container
     ctx.strokeStyle = darkMode ? 'rgba(148, 163, 184, 0.4)' : 'rgba(148, 163, 184, 0.6)'
     ctx.lineWidth = 3
     ctx.stroke()
     
-    // Header (noch größer und deutlicher)
+    // Header
     ctx.fillStyle = darkMode ? '#ffffff' : '#1f2937'
     ctx.font = 'bold 100px system-ui'
     ctx.textAlign = 'center'
@@ -670,7 +644,7 @@ function HomeContent() {
     ctx.font = 'bold 72px system-ui'
     ctx.fillText('Lebensqualitäts-Analyse', canvas.width / 2, containerY + 220)
     
-    // Adresse (größer)
+    // Address
     let displayAddress = qualityScore.address
     if (displayAddress.length > 25) {
       displayAddress = displayAddress.substring(0, 25) + '...'
@@ -680,7 +654,7 @@ function HomeContent() {
     ctx.fillStyle = '#10b981'
     ctx.fillText(displayAddress, canvas.width / 2, containerY + 290)
     
-    // Alle Kategorien sammeln und sortieren (früher definiert)
+    // Collect and sort all categories
     const allCategories = [
       { label: 'Kindergärten', emoji: '🎓', score: qualityScore.kindergarten },
       { label: 'Schulen', emoji: '🏫', score: qualityScore.schools },
@@ -696,19 +670,19 @@ function HomeContent() {
       { label: 'Restaurants', emoji: '🍽️', score: qualityScore.restaurants }
     ].sort((a, b) => b.score - a.score)
     
-    // Top 3 und Flop 3
+    // Top 3 and bottom 3
     const topCategories = allCategories.slice(0, 3)
     const flopCategories = allCategories.slice(-3).reverse()
     
-    // Top-Kategorien starten später (nach dem Score)
+    // Top categories start later (after the score)
     const topStartY = containerY + 600
     
-    // Score Circle zwischen Ortsname und TOP 3 (größer)
+    // Score circle between location name and TOP 3
     const scoreCenterX = canvas.width / 2
     const scoreCenterY = containerY + 410
     const scoreRadius = 90
     
-    // Score-Kreis mit Gradient und Schatten
+    // Score circle with gradient and shadow
     ctx.save()
     ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
     ctx.shadowBlur = 25
@@ -733,7 +707,7 @@ function HomeContent() {
     ctx.fill()
     ctx.restore()
     
-    // Score-Text (zentriert im Kreis)
+    // Score text (centered in the circle)
     ctx.fillStyle = '#ffffff'
     ctx.font = 'bold 80px system-ui'
     ctx.textAlign = 'center'
@@ -744,7 +718,7 @@ function HomeContent() {
     ctx.shadowColor = 'transparent'
     ctx.font = 'bold 32px system-ui'
     ctx.fillStyle = darkMode ? '#e2e8f0' : '#c8ced7'
-    ctx.fillText('von 10', scoreCenterX, scoreCenterY + 35)
+    ctx.fillText('out of 10', scoreCenterX, scoreCenterY + 35)
     ctx.fillStyle = darkMode ? '#10b981' : '#059669'
     ctx.font = 'bold 48px system-ui'
     ctx.textAlign = 'center'
@@ -755,12 +729,12 @@ function HomeContent() {
       const itemX = containerX + 50
       const itemWidth = containerWidth - 100
       
-      // Item Background
+      // Item background
       ctx.fillStyle = darkMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)'
       roundRect(ctx, itemX, y - 35, itemWidth, 70, 16)
       ctx.fill()
       
-      // Emoji (größer und vollständig sichtbar)
+      // Emoji (larger and fully visible)
       ctx.save()
       ctx.globalAlpha = 1.0
       ctx.font = '48px system-ui'
@@ -769,7 +743,7 @@ function HomeContent() {
       ctx.fillText(cat.emoji, itemX + 30, y + 15)
       ctx.restore()
       
-      // Score Badge (größer)
+      // Score badge
       ctx.fillStyle = '#10b981'
       roundRect(ctx, itemX + itemWidth - 90, y - 25, 70, 50, 25)
       ctx.fill()
@@ -779,14 +753,14 @@ function HomeContent() {
       ctx.textAlign = 'center'
       ctx.fillText(cat.score.toString(), itemX + itemWidth - 55, y + 8)
       
-      // Label (größer)
+      // Label
       ctx.fillStyle = darkMode ? '#ffffff' : '#000000'
       ctx.font = 'bold 36px system-ui'
       ctx.textAlign = 'left'
       ctx.fillText(cat.label, itemX + 110, y + 12)
     })
     
-    // Flop-Kategorien (größer)
+    // Flop categories
     const flopStartY = topStartY + 380
     ctx.fillStyle = darkMode ? '#ef4444' : '#dc2626'
     ctx.font = 'bold 48px system-ui'
@@ -798,12 +772,12 @@ function HomeContent() {
       const itemX = containerX + 50
       const itemWidth = containerWidth - 100
       
-      // Item Background
+      // Item background
       ctx.fillStyle = darkMode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.15)'
       roundRect(ctx, itemX, y - 35, itemWidth, 70, 16)
       ctx.fill()
       
-      // Emoji (größer und vollständig opaque)
+      // Emoji (larger and fully opaque)
       ctx.save()
       ctx.globalAlpha = 1.0
       ctx.font = '48px system-ui'
@@ -812,7 +786,7 @@ function HomeContent() {
       ctx.fillText(cat.emoji, itemX + 30, y + 15)
       ctx.restore()
       
-      // Score Badge (größer)
+      // Score badge
       const badgeColor = cat.score >= 5 ? '#f59e0b' : '#ef4444'
       ctx.fillStyle = badgeColor
       roundRect(ctx, itemX + itemWidth - 90, y - 25, 70, 50, 25)
@@ -823,71 +797,71 @@ function HomeContent() {
       ctx.textAlign = 'center'
       ctx.fillText(cat.score.toString(), itemX + itemWidth - 55, y + 8)
       
-      // Label (größer)
+      // Label
       ctx.fillStyle = darkMode ? '#ffffff' : '#000000'
       ctx.font = 'bold 36px system-ui'
       ctx.textAlign = 'left'
       ctx.fillText(cat.label, itemX + 110, y + 12)
     })
     
-    // Quadratische Karte links und Call-to-Action rechts
-    const mapSize = 280  // Quadratische Größe
+    // Square map on the left and call-to-action on the right
+    const mapSize = 280  // Square size
     const mapY = flopStartY + 360
-    const mapX = containerX + 50  // Links im Container
+    const mapX = containerX + 50  // Left in the container
     
-    // Call-to-Action rechts neben der Karte
-    const ctaX = mapX + mapSize + 50  // 50px Abstand zur Karte
-    const ctaY = mapY + mapSize / 2   // Vertikal zentriert zur Karte
-    const ctaWidth = containerWidth - (mapSize + 150)  // Verfügbare Breite rechts
+    // Call-to-action to the right of the map
+    const ctaX = mapX + mapSize + 50  // 50px spacing from the map
+    const ctaY = mapY + mapSize / 2   // Vertically centered to the map
+    const ctaWidth = containerWidth - (mapSize + 150)  // Available width on the right
     
-    // Call-to-Action Text (mehrzeilig wenn nötig)
+    // Call-to-action text (multi-line if needed)
     ctx.fillStyle = '#10b981'
     ctx.font = 'bold 32px system-ui'
     ctx.textAlign = 'left'
     
-    // Text umbrechen
-    const ctaText = '📱 Entdecke die Lebensqualität in deiner Stadt!'
+    // Wrap text
+    const ctaText = '📱 Discover the quality of life in your city!'
     const words = ctaText.split(' ')
     const maxWidth = ctaWidth
     let line = ''
-    let y = ctaY - 20  // Startposition
+    let y = ctaY - 20  // Start position
     
     for (let i = 0; i < words.length; i++) {
       const testLine = line + words[i] + ' '
       const metrics = ctx.measureText(testLine)
       if (metrics.width > maxWidth && i > 0) {
-        ctx.fillText(line.trim(), ctaX, y)
-        line = words[i] + ' '
-        y += 40
+      ctx.fillText(line.trim(), ctaX, y)
+      line = words[i] + ' '
+      y += 40
       } else {
-        line = testLine
+      line = testLine
       }
     }    ctx.fillText(line.trim(), ctaX, y)
     
-    // Quadratische OSM-Karte (vereinfacht)
-    // Versuche echte OSM-Kachel zu laden
+    // Square OSM map
+    // Attempt to load real OSM tile
     const mapTile = await loadMapTile(qualityScore.lat, qualityScore.lng, 13)
     
     if (mapTile) {
-      // Echte OSM-Karte zeichnen (quadratisch)
+      // Draw real OSM map (square)
       ctx.save()
       
-      // Clip auf abgerundetes Quadrat
+      // Clip to rounded square
       roundRect(ctx, mapX, mapY, mapSize, mapSize, 20)
       ctx.clip()
       
-      // OSM-Kachel quadratisch einzeichnen 
+      // Draw OSM tile square
       ctx.drawImage(mapTile, mapX, mapY, mapSize, mapSize)
       
       ctx.restore()
       
-      // Border über die Karte
+      // Border over the map
       ctx.strokeStyle = darkMode ? '#94a3b8' : '#334155'
       ctx.lineWidth = 6
       roundRect(ctx, mapX, mapY, mapSize, mapSize, 20)
       ctx.stroke()
     } else {
-      // Fallback: Straßen-Grid wenn OSM nicht lädt
+      // Fallback: street grid if OSM doesn't load
       ctx.fillStyle = darkMode ? '#1e293b' : '#f8fafc'
       roundRect(ctx, mapX, mapY, mapSize, mapSize, 20)
       ctx.fill()
@@ -897,32 +871,32 @@ function HomeContent() {
       roundRect(ctx, mapX, mapY, mapSize, mapSize, 20)
       ctx.stroke()
       
-      // Straßen-Grid als Fallback
+      // Street grid as fallback
       ctx.strokeStyle = darkMode ? '#64748b' : '#94a3b8'
       ctx.lineWidth = 8
       
       for (let i = 1; i < 5; i++) {
-        const roadY = mapY + (i * mapSize / 5)
-        ctx.beginPath()
-        ctx.moveTo(mapX + 30, roadY)
-        ctx.lineTo(mapX + mapSize - 30, roadY)
-        ctx.stroke()
+      const roadY = mapY + (i * mapSize / 5)
+      ctx.beginPath()
+      ctx.moveTo(mapX + 30, roadY)
+      ctx.lineTo(mapX + mapSize - 30, roadY)
+      ctx.stroke()
       }
       
       for (let i = 1; i < 5; i++) {
-        const roadX = mapX + (i * mapSize / 5)
-        ctx.beginPath()
-        ctx.moveTo(roadX, mapY + 30)
-        ctx.lineTo(roadX, mapY + mapSize - 30)
-        ctx.stroke()
+      const roadX = mapX + (i * mapSize / 5)
+      ctx.beginPath()
+      ctx.moveTo(roadX, mapY + 30)
+      ctx.lineTo(roadX, mapY + mapSize - 30)
+      ctx.stroke()
       }
     }
     
-    // Nur der zentrale Standort-Marker (vereinfacht)
+    // Only the central location marker
     const centerMapX = mapX + mapSize / 2
     const centerMapY = mapY + mapSize / 2
     
-    // Hauptmarker (Standort) - größer und deutlicher mit Schatten
+    // Main marker (location) 
     ctx.save()
     ctx.globalAlpha = 1.0
     ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'
@@ -945,7 +919,7 @@ function HomeContent() {
     ctx.fillText('📍', centerMapX, centerMapY + 10)
     ctx.restore()
     
-    // Footer mit "made with love" in weißem Bereich
+    // Footer with "made with love" in white area
     ctx.fillStyle = darkMode ? '#64748b' : '#94a3b8'
     ctx.font = '20px system-ui'
     ctx.textAlign = 'center'
@@ -953,10 +927,10 @@ function HomeContent() {
     ctx.fillText('made with ❤️ from Greifswald', canvas.width / 2, canvas.height - 90)
     
     return canvas.toDataURL('image/png')
-  }
-  
-  // Helper function für rounded rectangles
-  function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+    }
+    
+    // Helper function for rounded rectangles
+    function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
     ctx.beginPath()
     ctx.moveTo(x + radius, y)
     ctx.lineTo(x + width - radius, y)
@@ -988,22 +962,17 @@ function HomeContent() {
         files: [new File([blob], `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`, { type: 'image/png' })]
       }
       
-      // Prüfe ob Gerät mobiles Teilen unterstützt
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
       
-      // Web Share API versuchen
       if (navigator.share) {
         try {
-          // Prüfe was unterstützt wird
           if (isMobile) {
-            // Mobile: Erst Text+URL teilen
             await navigator.share({
               title: shareData.title,
               text: shareData.text,
               url: shareData.url
             })
             
-            // Frage nach Bild-Download
             if (confirm('Möchten Sie auch das Bild herunterladen?')) {
               const link = document.createElement('a')
               link.download = `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`
@@ -1012,19 +981,16 @@ function HomeContent() {
             }
             return
           } else {
-            // Desktop: Versuche mit Datei zu teilen
             if (navigator.canShare && navigator.canShare(shareData)) {
               await navigator.share(shareData)
               return
             } else {
-              // Fallback: nur Text+URL
               await navigator.share({
                 title: shareData.title,
                 text: shareData.text,
                 url: shareData.url
               })
               
-              // Bild separat downloaden
               const link = document.createElement('a')
               link.download = `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`
               link.href = imageDataUrl
@@ -1034,17 +1000,14 @@ function HomeContent() {
           }
         } catch (shareError) {
           console.log('Web Share API fehlgeschlagen:', shareError)
-          // Fallback unten
         }
       }
       
-      // Fallback: Download des Bildes + URL kopieren
       const link = document.createElement('a')
       link.download = `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`
       link.href = imageDataUrl
       link.click()
       
-      // URL in Zwischenablage kopieren
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(window.location.href)
       } else {
@@ -1055,11 +1018,9 @@ function HomeContent() {
     }
   }
 
-  // URL kopieren Funktionalität
   const handleCopyURL = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href)
-      // Kurze Benachrichtigung
       const originalTitle = document.title
       document.title = '✓ URL kopiert!'
       setTimeout(() => {
@@ -1067,14 +1028,12 @@ function HomeContent() {
       }, 2000)
     } catch (error) {
       console.error('Fehler beim Kopieren der URL:', error)
-      // Fallback für ältere Browser
       const textArea = document.createElement('textarea')
       textArea.value = window.location.href
       document.body.appendChild(textArea)
       textArea.select()
       document.execCommand('copy')
       document.body.removeChild(textArea)
-      alert('URL wurde in die Zwischenablage kopiert!')
     }
   }
 
@@ -1093,7 +1052,6 @@ function HomeContent() {
     }))
   }
 
-  // Berechne die Gesamtbewertung einer Gruppe
   const getGroupScore = (groupKey: string): number => {
     if (!qualityScore) return 0
     
@@ -1162,8 +1120,6 @@ function HomeContent() {
         [groupKey]: {
           ...prev[groupKey],
           enabled: newEnabled,
-          // Wenn Gruppe abgewählt wird, alle Kategorien abwählen
-          // Wenn Gruppe angewählt wird, alle Kategorien wieder anwählen
           categories: prev[groupKey].categories.map(cat => ({
             ...cat,
             enabled: newEnabled
@@ -1175,7 +1131,6 @@ function HomeContent() {
 
   const toggleCategoryVisibility = (groupKey: string, categoryKey: string) => {
     setCategoryGroups(prev => {
-      // Nur toggle erlauben, wenn die Gruppe aktiviert ist
       if (!prev[groupKey].enabled) return prev
       
       return {
@@ -1237,7 +1192,6 @@ function HomeContent() {
     return colors[key] || 'bg-gray-500'
   }
 
-  // Gewichtungslabels und -werte
   const getWeightLabel = (weight: number) => {
     if (weight === 0.0) return 'deaktiviert'
     if (weight >= 1.2) return 'sehr wichtig'
@@ -1256,7 +1210,6 @@ function HomeContent() {
     { value: 0.0, label: 'deaktiviert' }
   ]
 
-  // Funktion für farbige Bewertungen basierend auf Score
   const getScoreColor = (score: number) => {
     if (score >= 8) return 'from-green-500 to-emerald-500'
     if (score >= 6) return 'from-yellow-400 to-green-500'
@@ -1270,12 +1223,10 @@ function HomeContent() {
     return 'text-white'
   }
 
-  // Lokale Neuberechnung der Gesamtbewertung basierend auf Kategorienauswahl und Gewichtung
   const recalculateScoreLocally = useCallback((currentScore: QualityScore): QualityScore => {
     let overallScore = 0
     let totalWeight = 0
     
-    // Durchlaufe alle Gruppen und Kategorien
     Object.values(categoryGroups).forEach((group) => {
       if (!group.enabled) return
       
@@ -1286,12 +1237,10 @@ function HomeContent() {
         
         const categoryWeight = category.weight || 1.0
         
-        // Ignoriere Kategorien mit Gewichtung 0.0 (deaktiviert)
         if (categoryWeight === 0.0) return
         
         const finalWeight = groupWeight * categoryWeight
         
-        // Hole den Score für diese Kategorie aus den vorhandenen Daten
         const score = currentScore[category.key as keyof QualityScore] as number
         
         if (typeof score === 'number') {
@@ -1301,7 +1250,6 @@ function HomeContent() {
       })
     })
     
-    // Lärm- und Verkehrsbelastung immer berücksichtigen (als negative Faktoren)
     if (totalWeight > 0) {
       const noisePenalty = (10 - currentScore.noise) * 0.1
       const trafficPenalty = (10 - currentScore.traffic) * 0.1
@@ -1313,11 +1261,10 @@ function HomeContent() {
     
     return {
       ...currentScore,
-      overall: Math.max(0, Math.min(10, newOverallScore)) // Begrenze auf 0-10
+      overall: Math.max(0, Math.min(10, newOverallScore))
     }
   }, [categoryGroups, categoryVisibility])
 
-  // Gewichtungspresets basierend auf Zielgruppen
   const weightingPresets = {
     default: {
       name: 'Standard',
@@ -1383,20 +1330,16 @@ function HomeContent() {
 
   const [selectedPreset, setSelectedPreset] = useState<string>('default')
 
-  // Funktion zum Anwenden eines Presets
   const applyPreset = (presetKey: string) => {
     const preset = weightingPresets[presetKey as keyof typeof weightingPresets]
     if (!preset) return
 
     const newCategoryGroups = { ...categoryGroups }
     
-    // Alle Kategorien-Gruppen durchgehen
     Object.entries(preset.groups).forEach(([groupKey, groupData]) => {
       if (newCategoryGroups[groupKey]) {
-        // Gruppengewichtung setzen
         newCategoryGroups[groupKey].weight = groupData.weight
         
-        // Kategoriengewichtungen setzen
         Object.entries(groupData.categories).forEach(([categoryKey, categoryWeight]) => {
           const categoryIndex = newCategoryGroups[groupKey].categories.findIndex(c => c.key === categoryKey)
           if (categoryIndex !== -1) {
@@ -1410,24 +1353,20 @@ function HomeContent() {
     setSelectedPreset(presetKey)
   }
 
-  // Funktion zum Zurücksetzen auf Standard-Preset
   const resetToDefault = () => {
     applyPreset('default')
   }
 
-  // Funktion zum Erkennen des aktuellen Presets basierend auf Gewichtungen
   const detectCurrentPreset = () => {
     for (const [key, preset] of Object.entries(weightingPresets)) {
       let matches = true
       
-      // Prüfe alle Gruppengewichtungen
       for (const [groupKey, groupData] of Object.entries(preset.groups)) {
         if (!categoryGroups[groupKey] || Math.abs(categoryGroups[groupKey].weight - groupData.weight) > 0.01) {
           matches = false
           break
         }
         
-        // Prüfe alle Kategoriengewichtungen
         for (const [categoryKey, categoryWeight] of Object.entries(groupData.categories)) {
           const category = categoryGroups[groupKey].categories.find(c => c.key === categoryKey)
           if (!category || Math.abs(category.weight - categoryWeight) > 0.01) {
@@ -1444,39 +1383,15 @@ function HomeContent() {
       }
     }
     
-    return 'custom' // Benutzerdefinierte Gewichtungen
+    return 'custom'
   }
 
-  // Aktualisiere den Preset-Status bei Änderungen
   useEffect(() => {
     const currentPreset = detectCurrentPreset()
     if (currentPreset !== selectedPreset) {
       setSelectedPreset(currentPreset)
     }
   }, [categoryGroups]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const getCategoryExamples = (categoryKey: string): string => {
-    const examples = {
-      kindergarten: 'Kindergärten, Kindertagesstätten, Vorschulen',
-      schools: 'Grundschulen, weiterführende Schulen, Gymnasien',
-      education: 'Universitäten, Hochschulen, Fachhochschulen',
-      supermarkets: 'Supermärkte, Lebensmittelgeschäfte, Discounter',
-      doctors: 'Arztpraxen, Krankenhäuser, medizinische Zentren',
-      pharmacies: 'Apotheken, Sanitätshäuser',
-      culture: 'Museen, Theater, Bibliotheken, Kinos, Galerien, Kunsthäuser',
-      sports: 'Fitnessstudios, Schwimmbäder, Sporthallen, Tennisplätze, Calisthenics-Parks, Kletterhallen',
-      parks: 'Parkanlagen, Spielplätze, Gärten, Erholungsgebiete',
-      transport: 'Bushaltestellen, Bahnhöfe, U-Bahn-Stationen',
-      cycling: 'Fahrradwege, Fahrradspuren, Radverleih, Reparaturstationen',
-      restaurants: 'Restaurants, Cafés, Bars, Fast-Food',
-      shopping: 'Bäckereien, Metzgereien, Bekleidungsgeschäfte, Einkaufszentren',
-      finance: 'Banken, Geldautomaten, Finanzdienstleister',
-      safety: 'Polizeistationen, Feuerwachen',
-      services: 'Poststellen, Tankstellen',
-      hairdresser: 'Friseure, Kosmetikstudios, Beautysalons'
-    }
-    return examples[categoryKey as keyof typeof examples] || 'Verschiedene Einrichtungen'
-  }
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -1620,7 +1535,7 @@ function HomeContent() {
             )}
           </div>
 
-          {/* Gewichtungspresets */}
+         { /* Weighting Presets */}
           <div className={`rounded-2xl shadow-xl border p-6 lg:p-8 backdrop-blur-sm transition-colors duration-300 ${
             darkMode 
               ? 'bg-slate-800/80 border-slate-600/30' 
@@ -1643,7 +1558,7 @@ function HomeContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
               {Object.entries(weightingPresets).map(([key, preset]) => (
                 <button
-                  key={key} // Added missing key prop
+                  key={key}
                   onClick={() => applyPreset(key)}
                   className={`p-4 rounded-xl border transition-all duration-200 text-left hover:scale-105 ${
                     selectedPreset === key
@@ -1669,7 +1584,7 @@ function HomeContent() {
                 </button>
               ))}
               
-              {/* Benutzerdefinierte Gewichtungen Anzeige */}
+              {/* Custom Weightings Display */}
               {selectedPreset === 'custom' && (
                 <div className={`p-4 rounded-xl border ${
                   darkMode 
@@ -1837,12 +1752,12 @@ function HomeContent() {
             </div>
           </div>
 
-          {/* Quality Score Display und Map - Neues Layout */}
+          {/* Quality Score Display and Map  */}
           {qualityScore && (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
-              {/* Linke Seite: Bewertungen und Einstellungen */}
+              {/* Left Side */}
               <div className="space-y-6">
-                {/* Gesamtbewertung */}
+                {/* Rating */}
                 <div className={`rounded-2xl shadow-xl border p-6 backdrop-blur-sm transition-colors duration-300 ${
                   darkMode 
                     ? 'bg-slate-800/80 border-slate-600/30' 
@@ -1861,7 +1776,7 @@ function HomeContent() {
                     </p>
                   </div>
                   
-                  {/* Große Gesamtbewertung mit Farbverlauf */}
+                  {/* Overall Rating */}
                   <div className="text-center mb-6">
                     <div className={`inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br ${getScoreColor(qualityScore.overall)} shadow-2xl mb-4`}>
                       <div className={`text-4xl font-bold ${getScoreTextColor(qualityScore.overall)}`}>
@@ -1942,9 +1857,7 @@ function HomeContent() {
                           <span>{isMobile ? 'Teilen' : 'Als Bild teilen'}</span>
                         </button>
                       : null}
-                      
-                      {/* Download Button nur auf mobilen Geräten */}
-                      
+                                            
                     </div>
                   </div>
                 </div>
@@ -2090,7 +2003,7 @@ function HomeContent() {
                                       </div>
                                     </div>
                                     {/* Gewichtungsauswahl nur im Bearbeiten-Modus */}
-                                                                       {editingGroups[groupKey] && (
+                                    {editingGroups[groupKey] && (
                                       <select
                                         value={category.weight}
                                         onChange={(e) => updateCategoryWeight(groupKey, category.key, parseFloat(e.target.value))}
