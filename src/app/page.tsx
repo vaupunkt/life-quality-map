@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import SettingsModal from '@/components/SettingsModal'
 import InfoModal from '@/components/InfoModal'
@@ -82,6 +83,10 @@ interface CategoryGroup {
 }
 
 export default function Home() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  
   const [address, setAddress] = useState('')
   const [loading, setLoading] = useState(false)
   const [mapLoading, setMapLoading] = useState(false)
@@ -288,6 +293,12 @@ export default function Home() {
       }
 
       setQualityScore(scoreData)
+      
+      // URL aktualisieren nach erfolgreicher Analyse
+      if (addressName) {
+        updateURL(addressName)
+        console.log('URL updated after quality score calculation:', addressName)
+      }
     } finally {
       setMapLoading(false)
       setRecalculatingScore(false)
@@ -313,6 +324,10 @@ export default function Home() {
 
       // Calculate quality score
       await calculateQualityScore(data.lat, data.lng, address)
+      
+      // URL aktualisieren nach erfolgreicher Adresseingabe
+      updateURL(address)
+      console.log('URL updated after address submission:', address)
     } catch (err) {
       setError('Fehler beim Laden der Daten')
     } finally {
@@ -379,6 +394,476 @@ export default function Home() {
     )
   }
 
+  // URL-Parameter Management
+  const updateURL = (address: string) => {
+    if (typeof window === 'undefined') return // SSR check
+    
+    try {
+      if (address) {
+        const cleanAddress = address.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-').toLowerCase()
+        const newUrl = `${window.location.origin}${window.location.pathname}?ort=${encodeURIComponent(address)}#${cleanAddress}`
+        
+        // Direkte URL-Aktualisierung
+        window.history.replaceState(null, '', newUrl)
+        console.log('URL updated to:', newUrl)
+        
+        // Aktualisiere den Seitentitel
+        document.title = `Lebensqualität in ${address} - Lebensqualitäts-Karte`
+      } else {
+        const newUrl = `${window.location.origin}${window.location.pathname}`
+        window.history.replaceState(null, '', newUrl)
+        console.log('URL reset to:', newUrl)
+        document.title = 'Lebensqualitäts-Karte - Entdecke die Lebensqualität in deiner Stadt'
+      }
+    } catch (error) {
+      console.error('Error updating URL:', error)
+    }
+  }
+
+  // Lade Adresse aus URL beim Start
+  useEffect(() => {
+    const ortParam = searchParams.get('ort')
+    if (ortParam && !address && !qualityScore) {
+      const decodedAddress = decodeURIComponent(ortParam)
+      setAddress(decodedAddress)
+      // Automatisch analysieren wenn URL-Parameter vorhanden
+      handleAddressSearch(decodedAddress)
+    }
+  }, [searchParams])
+
+  const handleAddressSearch = async (searchAddress: string = address) => {
+    if (!searchAddress.trim()) return
+    
+    console.log('Updating URL for address:', searchAddress) // Debug
+    updateURL(searchAddress)
+    console.log('New URL:', window.location.href) // Debug
+    
+    setLoading(true)
+    setError('')
+
+    try {
+      // Geocoding API call
+      const response = await fetch(`/api/geocode?address=${encodeURIComponent(searchAddress)}`)
+      const data = await response.json()
+
+      if (data.error) {
+        setError(data.error)
+        return
+      }
+
+      // Calculate quality score
+      await calculateQualityScore(data.lat, data.lng, searchAddress)
+    } catch (err) {
+      setError('Fehler beim Laden der Daten')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Share-Funktionalität - Instagram Story Format (größere Schrift & sichtbare Karte)
+  const generateShareImage = async () => {
+    if (!qualityScore) return
+    
+    // Erstelle ein virtuelles Canvas Element im Instagram Story Format (9:16)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    
+    canvas.width = 1080
+    canvas.height = 1920
+    
+    // Hintergrund mit modernem Gradient
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
+    if (darkMode) {
+      gradient.addColorStop(0, '#0f172a')
+      gradient.addColorStop(0.5, '#1e293b') 
+      gradient.addColorStop(1, '#334155')
+    } else {
+      gradient.addColorStop(0, '#f0f9ff')
+      gradient.addColorStop(0.5, '#e0f2fe')
+      gradient.addColorStop(1, '#bae6fd')
+    }
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    
+    // Dekorative Kreise im Hintergrund
+    ctx.globalAlpha = 0.08
+    for (let i = 0; i < 6; i++) {
+      const x = Math.random() * canvas.width
+      const y = Math.random() * canvas.height
+      const radius = Math.random() * 120 + 40
+      
+      ctx.fillStyle = darkMode ? '#10b981' : '#0284c7'
+      ctx.beginPath()
+      ctx.arc(x, y, radius, 0, 2 * Math.PI)
+      ctx.fill()
+    }
+    ctx.globalAlpha = 1
+    
+    // Hauptcontainer mit glassmorphism Effekt
+    const containerPadding = 50
+    const containerX = containerPadding
+    const containerY = 60
+    const containerWidth = canvas.width - (containerPadding * 2)
+    const containerHeight = canvas.height - 120
+    
+    // Glassmorphism Hintergrund
+    ctx.fillStyle = darkMode ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.92)'
+    ctx.filter = 'blur(0px)'
+    roundRect(ctx, containerX, containerY, containerWidth, containerHeight, 32)
+    ctx.fill()
+    
+    // Border für den Container
+    ctx.strokeStyle = darkMode ? 'rgba(148, 163, 184, 0.4)' : 'rgba(148, 163, 184, 0.6)'
+    ctx.lineWidth = 3
+    ctx.stroke()
+    
+    // Header (größer)
+    ctx.fillStyle = darkMode ? '#ffffff' : '#1f2937'
+    ctx.font = 'bold 80px system-ui'
+    ctx.textAlign = 'center'
+    ctx.fillText('🍀', canvas.width / 2, containerY + 100)
+    
+    ctx.font = 'bold 56px system-ui'
+    ctx.fillText('Lebensqualitäts-Analyse', canvas.width / 2, containerY + 180)
+    
+    // Adresse (größer)
+    let displayAddress = qualityScore.address
+    if (displayAddress.length > 30) {
+      displayAddress = displayAddress.substring(0, 30) + '...'
+    }
+    
+    ctx.font = '36px system-ui'
+    ctx.fillStyle = '#10b981'
+    ctx.fillText(displayAddress, canvas.width / 2, containerY + 240)
+    
+    // Score Circle (größer)
+    const scoreCenterX = canvas.width / 2
+    const scoreCenterY = containerY + 360
+    const scoreRadius = 130
+    
+    // Score-Kreis mit Gradient und Schatten
+    ctx.save()
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.25)'
+    ctx.shadowBlur = 20
+    ctx.shadowOffsetY = 10
+    
+    const scoreGradient = ctx.createRadialGradient(scoreCenterX, scoreCenterY, 0, scoreCenterX, scoreCenterY, scoreRadius)
+    const score = qualityScore.overall
+    if (score >= 8) {
+      scoreGradient.addColorStop(0, '#10b981')
+      scoreGradient.addColorStop(1, '#059669')
+    } else if (score >= 6) {
+      scoreGradient.addColorStop(0, '#f59e0b')
+      scoreGradient.addColorStop(1, '#d97706')
+    } else {
+      scoreGradient.addColorStop(0, '#ef4444')
+      scoreGradient.addColorStop(1, '#dc2626')
+    }
+    
+    ctx.fillStyle = scoreGradient
+    ctx.beginPath()
+    ctx.arc(scoreCenterX, scoreCenterY, scoreRadius, 0, 2 * Math.PI)
+    ctx.fill()
+    ctx.restore()
+    
+    // Score-Text (größer)
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 110px system-ui'
+    ctx.textAlign = 'center'
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)'
+    ctx.shadowBlur = 4
+    ctx.fillText(Math.round(score).toString(), scoreCenterX, scoreCenterY + 35)
+    
+    ctx.shadowColor = 'transparent'
+    ctx.font = '32px system-ui'
+    ctx.fillStyle = darkMode ? '#d1d5db' : '#374151'
+    ctx.fillText('von 10', scoreCenterX, scoreCenterY + 80)
+    
+    // Alle Kategorien sammeln und sortieren
+    const allCategories = [
+      { label: 'Kindergärten', emoji: '🎓', score: qualityScore.kindergarten },
+      { label: 'Schulen', emoji: '🏫', score: qualityScore.schools },
+      { label: 'Hochschulen', emoji: '🎓', score: qualityScore.education },
+      { label: 'Supermärkte', emoji: '🛒', score: qualityScore.supermarkets },
+      { label: 'Ärzte', emoji: '🏥', score: qualityScore.doctors },
+      { label: 'Apotheken', emoji: '💊', score: qualityScore.pharmacies },
+      { label: 'Kultur', emoji: '🎭', score: qualityScore.culture },
+      { label: 'Sport', emoji: '⚽', score: qualityScore.sports },
+      { label: 'Parks', emoji: '🌳', score: qualityScore.parks },
+      { label: 'ÖPNV', emoji: '🚌', score: qualityScore.transport },
+      { label: 'Fahrradwege', emoji: '🚲', score: qualityScore.cycling },
+      { label: 'Restaurants', emoji: '🍽️', score: qualityScore.restaurants }
+    ].sort((a, b) => b.score - a.score)
+    
+    // Top 3 und Flop 3
+    const topCategories = allCategories.slice(0, 3)
+    const flopCategories = allCategories.slice(-3).reverse()
+    
+    // Top-Kategorien (größer)
+    const topStartY = containerY + 520
+    ctx.fillStyle = darkMode ? '#10b981' : '#059669'
+    ctx.font = 'bold 42px system-ui'
+    ctx.textAlign = 'center'
+    ctx.fillText('🏆 TOP 3', canvas.width / 2, topStartY)
+    
+    topCategories.forEach((cat, index) => {
+      const y = topStartY + 80 + (index * 80)
+      const itemX = containerX + 50
+      const itemWidth = containerWidth - 100
+      
+      // Item Background
+      ctx.fillStyle = darkMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)'
+      roundRect(ctx, itemX, y - 35, itemWidth, 70, 16)
+      ctx.fill()
+      
+      // Emoji (größer und ohne Transparenz)
+      ctx.globalAlpha = 1.0
+      ctx.font = '40px system-ui'
+      ctx.textAlign = 'left'
+      ctx.fillText(cat.emoji, itemX + 30, y + 10)
+      
+      // Score Badge (größer)
+      ctx.fillStyle = '#10b981'
+      roundRect(ctx, itemX + itemWidth - 90, y - 25, 70, 50, 25)
+      ctx.fill()
+      
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 28px system-ui'
+      ctx.textAlign = 'center'
+      ctx.fillText(cat.score.toString(), itemX + itemWidth - 55, y + 8)
+      
+      // Label (größer)
+      ctx.fillStyle = darkMode ? '#e2e8f0' : '#1f2937'
+      ctx.font = 'bold 32px system-ui'
+      ctx.textAlign = 'left'
+      ctx.fillText(cat.label, itemX + 100, y + 10)
+    })
+    
+    // Flop-Kategorien (größer)
+    const flopStartY = topStartY + 340
+    ctx.fillStyle = darkMode ? '#ef4444' : '#dc2626'
+    ctx.font = 'bold 42px system-ui'
+    ctx.textAlign = 'center'
+    ctx.fillText('📉 FLOP 3', canvas.width / 2, flopStartY)
+    
+    flopCategories.forEach((cat, index) => {
+      const y = flopStartY + 80 + (index * 80)
+      const itemX = containerX + 50
+      const itemWidth = containerWidth - 100
+      
+      // Item Background
+      ctx.fillStyle = darkMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)'
+      roundRect(ctx, itemX, y - 35, itemWidth, 70, 16)
+      ctx.fill()
+      
+      // Emoji (größer und ohne Transparenz)
+      ctx.globalAlpha = 1.0
+      ctx.font = '40px system-ui'
+      ctx.textAlign = 'left'
+      ctx.fillText(cat.emoji, itemX + 30, y + 10)
+      
+      // Score Badge (größer)
+      const badgeColor = cat.score >= 5 ? '#f59e0b' : '#ef4444'
+      ctx.fillStyle = badgeColor
+      roundRect(ctx, itemX + itemWidth - 90, y - 25, 70, 50, 25)
+      ctx.fill()
+      
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 28px system-ui'
+      ctx.textAlign = 'center'
+      ctx.fillText(cat.score.toString(), itemX + itemWidth - 55, y + 8)
+      
+      // Label (größer)
+      ctx.fillStyle = darkMode ? '#e2e8f0' : '#1f2937'
+      ctx.font = 'bold 32px system-ui'
+      ctx.textAlign = 'left'
+      ctx.fillText(cat.label, itemX + 100, y + 10)
+    })
+    
+    // Deutlich sichtbarere Mini-Karte mit höherem Kontrast
+    const mapY = flopStartY + 340
+    const mapHeight = 280
+    const mapWidth = containerWidth - 100
+    const mapX = containerX + 50
+    
+    // Karten-Hintergrund (heller/dunkler für besseren Kontrast)
+    ctx.fillStyle = darkMode ? '#0f172a' : '#ffffff'
+    roundRect(ctx, mapX, mapY, mapWidth, mapHeight, 20)
+    ctx.fill()
+    
+    // Deutlicher Karten-Border
+    ctx.strokeStyle = darkMode ? '#64748b' : '#374151'
+    ctx.lineWidth = 4
+    ctx.stroke()
+    
+    // Straßen-Grid (deutlich sichtbarer)
+    ctx.strokeStyle = darkMode ? '#475569' : '#d1d5db'
+    ctx.lineWidth = 6
+    
+    // Horizontale Straßen
+    for (let i = 1; i < 5; i++) {
+      const roadY = mapY + (i * mapHeight / 5)
+      ctx.beginPath()
+      ctx.moveTo(mapX + 30, roadY)
+      ctx.lineTo(mapX + mapWidth - 30, roadY)
+      ctx.stroke()
+    }
+    
+    // Vertikale Straßen
+    for (let i = 1; i < 5; i++) {
+      const roadX = mapX + (i * mapWidth / 5)
+      ctx.beginPath()
+      ctx.moveTo(roadX, mapY + 30)
+      ctx.lineTo(roadX, mapY + mapHeight - 30)
+      ctx.stroke()
+    }
+    
+    // Zentraler Standort-Marker
+    const centerMapX = mapX + mapWidth / 2
+    const centerMapY = mapY + mapHeight / 2
+    
+    // Radius-Kreis (deutlicher)
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)'
+    ctx.lineWidth = 8
+    ctx.beginPath()
+    ctx.arc(centerMapX, centerMapY, 80, 0, 2 * Math.PI)
+    ctx.stroke()
+    
+    // Größere Einrichtungs-Marker
+    const markerPositions = [
+      { x: centerMapX - 60, y: centerMapY - 50, emoji: '🛒' },
+      { x: centerMapX + 55, y: centerMapY - 60, emoji: '🏥' },
+      { x: centerMapX - 45, y: centerMapY + 60, emoji: '🚌' },
+      { x: centerMapX + 65, y: centerMapY + 40, emoji: '🌳' },
+      { x: centerMapX + 15, y: centerMapY - 75, emoji: '🎓' },
+      { x: centerMapX - 70, y: centerMapY + 20, emoji: '�' }
+    ]
+    
+    markerPositions.forEach(marker => {
+      // Marker Hintergrund (größer)
+      ctx.fillStyle = '#ffffff'
+      ctx.strokeStyle = '#374151'
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.arc(marker.x, marker.y, 20, 0, 2 * Math.PI)
+      ctx.fill()
+      ctx.stroke()
+      
+      // Emoji (größer)
+      ctx.globalAlpha = 1.0
+      ctx.font = '24px system-ui'
+      ctx.textAlign = 'center'
+      ctx.fillText(marker.emoji, marker.x, marker.y + 8)
+    })
+    
+    // Hauptmarker (Standort) - größer
+    ctx.fillStyle = '#ef4444'
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 4
+    ctx.beginPath()
+    ctx.arc(centerMapX, centerMapY, 25, 0, 2 * Math.PI)
+    ctx.fill()
+    ctx.stroke()
+    
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 24px system-ui'
+    ctx.textAlign = 'center'
+    ctx.fillText('📍', centerMapX, centerMapY + 8)
+    
+    // Karten-Label (größer)
+    ctx.fillStyle = darkMode ? '#94a3b8' : '#64748b'
+    ctx.font = 'bold 28px system-ui'
+    ctx.textAlign = 'center'
+    ctx.fillText('🗺️ Kartenausschnitt mit Einrichtungen', mapX + mapWidth / 2, mapY + mapHeight + 40)
+    
+    // Footer mit App-Info (größer)
+    ctx.fillStyle = darkMode ? '#64748b' : '#94a3b8'
+    ctx.font = 'bold 24px system-ui'
+    ctx.textAlign = 'center'
+    ctx.fillText('🌐 Lebensqualitäts-Karte', canvas.width / 2, canvas.height - 30)
+    
+    return canvas.toDataURL('image/png')
+  }
+  
+  // Helper function für rounded rectangles
+  function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+    ctx.beginPath()
+    ctx.moveTo(x + radius, y)
+    ctx.lineTo(x + width - radius, y)
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius)
+    ctx.lineTo(x + width, y + height - radius)
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
+    ctx.lineTo(x + radius, y + height)
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius)
+    ctx.lineTo(x, y + radius)
+    ctx.quadraticCurveTo(x, y, x + radius, y)
+    ctx.closePath()
+  }
+
+  const handleShare = async () => {
+    if (!qualityScore) return
+    
+    try {
+      const imageDataUrl = await generateShareImage()
+      if (!imageDataUrl) return
+      
+      // Convert Data URL zu Blob
+      const response = await fetch(imageDataUrl)
+      const blob = await response.blob()
+      
+      const shareData = {
+        title: `Lebensqualität in ${qualityScore.address}`,
+        text: `🍀 Lebensqualitäts-Analyse für ${qualityScore.address}\n\n📊 Gesamtbewertung: ${qualityScore.overall}/10\n\nEntdecke die Lebensqualität in deiner Stadt!`,
+        url: window.location.href,
+        files: [new File([blob], `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`, { type: 'image/png' })]
+      }
+      
+      // Native Share API verwenden falls verfügbar
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        // Fallback: Download des Bildes
+        const link = document.createElement('a')
+        link.download = `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`
+        link.href = imageDataUrl
+        link.click()
+        
+        // URL in Zwischenablage kopieren
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(window.location.href)
+          alert('Bild wurde heruntergeladen und URL in die Zwischenablage kopiert!')
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Teilen:', error)
+      alert('Fehler beim Teilen der Ergebnisse')
+    }
+  }
+
+  // URL kopieren Funktionalität
+  const handleCopyURL = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      // Kurze Benachrichtigung
+      const originalTitle = document.title
+      document.title = '✓ URL kopiert!'
+      setTimeout(() => {
+        document.title = originalTitle
+      }, 2000)
+    } catch (error) {
+      console.error('Fehler beim Kopieren der URL:', error)
+      // Fallback für ältere Browser
+      const textArea = document.createElement('textarea')
+      textArea.value = window.location.href
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      alert('URL wurde in die Zwischenablage kopiert!')
+    }
+  }
+
   // Helper-Funktionen
   const toggleGroup = (groupKey: string) => {
     setExpandedGroups(prev => ({
@@ -423,7 +908,7 @@ export default function Home() {
     
     let total = 0
     const amenityKeys = [
-      'kindergartens', 'schools', 'education', 'supermarkets', 'doctors' , 'pharmacies', 'culture', 'sports', 'parks', 'transport', 'cycling',
+      'kindergartens', 'schools', 'education', 'supermarkets', 'doctors' , 'pharmacies' , 'culture', 'sports', 'parks', 'transport', 'cycling',
       'restaurants', 'shopping', 'finance', 'safety', 'services', 'hairdresser'
     ]
     
@@ -1236,6 +1721,37 @@ export default function Home() {
                         )}
                       </div>
                     )}
+                    
+                    {/* Share & Copy Buttons */}
+                    <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                      <Tooltip content="Kopiere die URL dieser Analyse in die Zwischenablage zum einfachen Teilen" darkMode={darkMode}>
+                        <button
+                          onClick={handleCopyURL}
+                          className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
+                            darkMode 
+                              ? 'bg-gradient-to-r from-slate-600 to-gray-600 hover:from-slate-700 hover:to-gray-700 text-white border border-slate-500' 
+                              : 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 border border-gray-300'
+                          }`}
+                        >
+                          <span className="text-xl">🔗</span>
+                          <span>URL kopieren</span>
+                        </button>
+                      </Tooltip>
+                      
+                      <Tooltip content="Teile deine Lebensqualitäts-Analyse als Bild mit Freunden und Familie" darkMode={darkMode}>
+                        <button
+                          onClick={handleShare}
+                          className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
+                            darkMode 
+                              ? 'bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white' 
+                              : 'bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white'
+                          }`}
+                        >
+                          <span className="text-xl">📤</span>
+                          <span>Als Bild teilen</span>
+                        </button>
+                      </Tooltip>
+                    </div>
                   </div>
                 </div>
 
@@ -1388,7 +1904,7 @@ export default function Home() {
                                       </div>
                                     </div>
                                     {/* Gewichtungsauswahl nur im Bearbeiten-Modus */}
-                                    {editingGroups[groupKey] && (
+                                                                       {editingGroups[groupKey] && (
                                       <select
                                         value={category.weight}
                                         onChange={(e) => updateCategoryWeight(groupKey, category.key, parseFloat(e.target.value))}
@@ -1628,7 +2144,7 @@ export default function Home() {
                       </div>
                       {getTotalVisibleMarkers() > 80 && (
                         <div className="flex items-start gap-2">
-                          <span className={`mt-0.5 ${darkMode ? 'text-emerald-400' : 'text-emerald-500'}`}>•</span>
+                          <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
                           <span><strong>Performance-Modus:</strong> {getTotalVisibleMarkers()} Marker gefunden - wird seitenweise angezeigt (max. 80 pro Seite) für bessere Performance</span>
                         </div>
                       )}

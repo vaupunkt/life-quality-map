@@ -130,8 +130,8 @@ export default function Map({
 
     // Initialize map
     const map = L.map(containerRef.current, {
-      center: [52.5200, 13.4050], // Berlin center
-      zoom: 13,
+      center: [51.1657, 10.4515], // Deutschland Zentrum
+      zoom: 6,
       zoomControl: true,
       preferCanvas: true, // Better performance
     })
@@ -399,10 +399,22 @@ export default function Map({
       heatmapRef.current.clearLayers()
     }
     
-    // Center map on the marker with a slight delay to ensure proper rendering
+    // Center map on the marker with appropriate zoom based on radius
     setTimeout(() => {
       if (mapRef.current) {
-        mapRef.current.setView([qualityScore.lat, qualityScore.lng], 15)
+        const currentRadius = radiusSettings[radiusSettings.activeRadius]
+        
+        // Calculate appropriate zoom level based on radius
+        let zoomLevel = 15 // Default for walking
+        if (currentRadius <= 500) {
+          zoomLevel = 15 // Walking distance - close zoom
+        } else if (currentRadius <= 1500) {
+          zoomLevel = 13 // Cycling distance - medium zoom
+        } else {
+          zoomLevel = 11 // Driving distance - wide zoom
+        }
+        
+        mapRef.current.setView([qualityScore.lat, qualityScore.lng], zoomLevel)
         mapRef.current.invalidateSize()
       }
     }, 100)
