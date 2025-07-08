@@ -1085,7 +1085,7 @@ export default function Home() {
                   Ansichtsoptionen
                 </h3>
                 <div className="space-y-3">
-                  <label className={`flex items-center p-3 rounded-xl border transition-all duration-200 cursor-not-allowed opacity-50 ${
+                  <label className={`flex items-center p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
                     darkMode 
                       ? 'border-slate-600 bg-slate-700/30' 
                       : 'border-gray-200 bg-gray-50'
@@ -1097,7 +1097,7 @@ export default function Home() {
                       className="mr-3 text-emerald-500 focus:ring-emerald-400 rounded"
                     />
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">�</span>
+                      <span className="text-lg">🌎</span>
                       <span className={`font-medium ${
                         darkMode ? 'text-gray-300' : 'text-gray-700'
                       }`}>Umweltdaten anzeigen</span>
@@ -1544,7 +1544,7 @@ export default function Home() {
               </div>
 
               {/* Rechte Seite: Karte */}
-              <div className={`rounded-2xl shadow-xl border backdrop-blur-sm transition-colors duration-300 ${
+              <div className={`rounded-2xl h-max shadow-xl border backdrop-blur-sm transition-colors duration-300 ${
                 darkMode 
                   ? 'bg-slate-800/80 border-slate-600/30' 
                   : 'bg-white/80 border-white/20'

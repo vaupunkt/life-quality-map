@@ -160,7 +160,7 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                 darkMode ? 'bg-slate-700' : 'bg-blue-50'
               }`}>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <span>�</span>
+                  <span>🌎</span>
                   Umweltdaten Integration
                 </h4>
                 <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -174,7 +174,7 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                 darkMode ? 'bg-slate-700' : 'bg-blue-50'
               }`}>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <span>�🍀</span>
+                  <span>🍀</span>
                   SKL Glücksatlas Integration
                 </h4>
                 <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
