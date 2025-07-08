@@ -423,8 +423,7 @@ export default function Home() {
     
     let total = 0
     const amenityKeys = [
-      'kindergartens', 'schools', 'education', 'supermarkets', 'doctors', 
-      'pharmacies', 'culture', 'sports', 'parks', 'transport', 'cycling',
+      'kindergartens', 'schools', 'education', 'supermarkets', 'doctors' , 'pharmacies', 'culture', 'sports', 'parks', 'transport', 'cycling',
       'restaurants', 'shopping', 'finance', 'safety', 'services', 'hairdresser'
     ]
     
@@ -756,6 +755,29 @@ export default function Home() {
       setSelectedPreset(currentPreset)
     }
   }, [categoryGroups])
+
+  const getCategoryExamples = (categoryKey: string): string => {
+    const examples = {
+      kindergarten: 'Kindergärten, Kindertagesstätten, Vorschulen',
+      schools: 'Grundschulen, weiterführende Schulen, Gymnasien',
+      education: 'Universitäten, Hochschulen, Fachhochschulen',
+      supermarkets: 'Supermärkte, Lebensmittelgeschäfte, Discounter',
+      doctors: 'Arztpraxen, Krankenhäuser, medizinische Zentren',
+      pharmacies: 'Apotheken, Sanitätshäuser',
+      culture: 'Museen, Theater, Bibliotheken, Kinos, Galerien, Kunsthäuser',
+      sports: 'Fitnessstudios, Schwimmbäder, Sporthallen, Tennisplätze, Calisthenics-Parks, Kletterhallen',
+      parks: 'Parkanlagen, Spielplätze, Gärten, Erholungsgebiete',
+      transport: 'Bushaltestellen, Bahnhöfe, U-Bahn-Stationen',
+      cycling: 'Fahrradwege, Fahrradspuren, Radverleih, Reparaturstationen',
+      restaurants: 'Restaurants, Cafés, Bars, Fast-Food',
+      shopping: 'Bäckereien, Metzgereien, Bekleidungsgeschäfte, Einkaufszentren',
+      finance: 'Banken, Geldautomaten, Finanzdienstleister',
+      safety: 'Polizeistationen, Feuerwachen',
+      services: 'Poststellen, Tankstellen',
+      hairdresser: 'Friseure, Kosmetikstudios, Beautysalons'
+    }
+    return examples[categoryKey as keyof typeof examples] || 'Verschiedene Einrichtungen'
+  }
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -1339,7 +1361,7 @@ export default function Home() {
                                       onChange={() => toggleCategoryVisibility(groupKey, category.key)}
                                       className="w-4 h-4 text-emerald-500 focus:ring-emerald-400 rounded"
                                     />
-                                    <Tooltip content={`${category.label}: ${category.enabled && group.enabled ? 'Aktiviert' : 'Deaktiviert'} mit Gewichtung ${category.weight}. Score: ${score}/10 basierend auf ${amenityCount} gefundenen Einrichtungen.`}>
+                                    <Tooltip content={`${category.label}: ${getCategoryExamples(category.key)}. ${category.enabled && group.enabled ? 'Aktiviert' : 'Deaktiviert'} mit Gewichtung ${category.weight}.`}>
                                       <div 
                                         className={`flex items-center gap-3 flex-1 ${!group.enabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                                         onClick={() => group.enabled && toggleCategoryVisibility(groupKey, category.key)}
@@ -1353,7 +1375,7 @@ export default function Home() {
                                   </div>
                                   <div className="flex items-center gap-3">
                                     {/* Farbiger Score-Badge */}
-                                    <Tooltip content={`${category.label} Score: ${score}/10 - ${score === 0 ? 'Keine Einrichtungen gefunden' : score < 5 ? 'Wenige Einrichtungen' : score < 8 ? 'Gute Ausstattung' : 'Sehr gute Ausstattung'}`}>
+                                    <Tooltip content={`${category.label}: ${getCategoryExamples(category.key)}. Score: ${score}/10 basierend auf ${amenityCount} gefundenen Einrichtungen.`}>
                                       <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getScoreColor(score)} ${getScoreTextColor(score)} font-bold text-sm min-w-[50px] text-center cursor-help`}>
                                         {score}/10
                                       </div>

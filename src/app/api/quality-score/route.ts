@@ -166,7 +166,7 @@ async function calculateQualityScore(
     doctors: ['doctors', 'hospital', 'clinic'],
     pharmacies: ['pharmacy'],
     culture: ['cinema', 'museum', 'theatre', 'library', 'gallery', 'art_gallery', 'exhibition_centre'],
-    sports: ['swimming_pool', 'fitness_centre', 'sports_centre', 'stadium'],
+    sports: ['swimming_pool', 'fitness_centre', 'sports_centre', 'stadium', 'gym', 'fitness', 'sports_hall', 'tennis', 'golf_course', 'ice_rink', 'climbing'],
     parks: ['park', 'playground', 'garden'],
     transport: ['bus_stop', 'station', 'tram_stop', 'subway_entrance'],
     cycling: ['bicycle_rental', 'bicycle_repair_station', 'cycleway', 'bicycle_parking', 'bike_lane', 'bicycle_road', 'designated_path'],
@@ -244,7 +244,10 @@ async function calculateQualityScore(
         // Kultur und Freizeit (inkl. Galerien)
         nwr["amenity"~"^(cinema|theatre|library|art_gallery)$"](around:${radius},${lat},${lng});
         nwr["tourism"~"^(museum|gallery|art_gallery|exhibition_centre)$"](around:${radius},${lat},${lng});
-        nwr["leisure"~"^(swimming_pool|fitness_centre|sports_centre|stadium)$"](around:${radius},${lat},${lng});
+        // Sport und Fitness (erweitert)
+        nwr["leisure"~"^(swimming_pool|fitness_centre|sports_centre|stadium|sports_hall|ice_rink|golf_course|climbing)$"](around:${radius},${lat},${lng});
+        nwr["amenity"~"^(gym|fitness)$"](around:${radius},${lat},${lng});
+        nwr["sport"~"^(tennis|calisthenics|fitness|climbing|swimming)$"](around:${radius},${lat},${lng});
         
         // Parks und Grünflächen
         nwr["leisure"~"^(park|playground|garden)$"](around:${radius},${lat},${lng});
@@ -351,9 +354,12 @@ async function calculateQualityScore(
         amenityDetails.culture.push({ lat: elementLat, lng: elementLng, name, type })
       }
       
-      if (['swimming_pool', 'fitness_centre', 'sports_centre', 'stadium'].includes(tags.leisure)) {
+      if (['swimming_pool', 'fitness_centre', 'sports_centre', 'stadium', 'sports_hall', 'ice_rink', 'golf_course', 'climbing'].includes(tags.leisure) ||
+          ['gym', 'fitness'].includes(tags.amenity) ||
+          ['tennis', 'calisthenics', 'fitness', 'climbing', 'swimming'].includes(tags.sport)) {
         amenityCounts.sports++
-        amenityDetails.sports.push({ lat: elementLat, lng: elementLng, name, type: tags.leisure })
+        const type = tags.leisure || tags.amenity || tags.sport || 'sports'
+        amenityDetails.sports.push({ lat: elementLat, lng: elementLng, name, type })
       }
       
       if (['park', 'playground', 'garden'].includes(tags.leisure) || tags.landuse === 'recreation_ground') {
