@@ -34,6 +34,8 @@ interface QualityScore {
   address: string
   lat: number
   lng: number
+  bundesland?: string | null
+  lebenszufriedenheit?: number | null
   amenities?: {
     kindergartens: Array<{lat: number, lng: number, name: string}>
     schools: Array<{lat: number, lng: number, name: string}>
@@ -815,10 +817,10 @@ export default function Home() {
                 📍 Adresse oder Ort eingeben
               </label>
             </div>
-            <form onSubmit={handleAddressSubmit} className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-              <div className="flex-1">
-                <Tooltip content="Geben Sie eine Adresse oder einen Ort ein (z.B. 'Alexanderplatz, Berlin' oder 'München Marienplatz') oder klicken Sie auf die Karte." darkMode={darkMode}>
-                  <div className="relative">
+            <form onSubmit={handleAddressSubmit} className="flex flex-col sm:flex-row gap-3 sm:gap-2">
+              <div className="flex-1 min-w-0 w-full">
+                <Tooltip content="Geben Sie eine Adresse oder einen Ort ein (z.B. 'Alexanderplatz, Berlin' oder 'München Marienplatz') oder klicken Sie auf die Karte." darkMode={darkMode} className="block w-full">
+                  <div className="relative w-full">
                     <input
                       type="text"
                       value={address}
@@ -849,13 +851,13 @@ export default function Home() {
                   </div>
                 </Tooltip>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2 flex-shrink-0">
                 <Tooltip content="Verwendet die GPS-Funktion Ihres Geräts, um Ihren aktuellen Standort zu ermitteln." darkMode={darkMode}>
                   <button
                     type="button"
                     onClick={handleCurrentLocation}
                     disabled={loading}
-                    className={`px-6 py-4 rounded-xl border transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap ${
+                    className={`px-4 py-4 rounded-xl border transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed ${
                       darkMode 
                         ? 'bg-slate-700/80 border-slate-600 text-gray-200 hover:bg-slate-600/80' 
                         : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -873,15 +875,15 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-xl hover:from-emerald-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none whitespace-nowrap text-lg"
+                    className="px-6 py-4 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-xl hover:from-emerald-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none text-lg"
                   >
                     {loading ? (
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                         <span>Laden...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <span>🔍</span>
                         <span>Bewerten</span>
                       </div>
@@ -1181,6 +1183,35 @@ export default function Home() {
                     {recalculatingScore && (
                       <div className="text-xs text-emerald-500 mt-2 font-medium">
                         wird neu berechnet...
+                      </div>
+                    )}
+                    
+                    {/* Bundesland und Lebenszufriedenheit */}
+                    {qualityScore.bundesland && (
+                      <div className={`mt-4 p-3 rounded-lg ${
+                        darkMode ? 'bg-slate-700/50' : 'bg-blue-50'
+                      } border ${
+                        darkMode ? 'border-slate-600' : 'border-blue-200'
+                      }`}>
+                        <div className={`text-sm font-medium ${
+                          darkMode ? 'text-gray-200' : 'text-gray-700'
+                        }`}>
+                          📍 {qualityScore.bundesland}
+                        </div>
+                        {qualityScore.lebenszufriedenheit && (
+                          <div className={`text-xs mt-1 ${
+                            darkMode ? 'text-gray-300' : 'text-gray-600'
+                          }`}>
+                            Lebenszufriedenheit: <span className="font-semibold text-blue-500">
+                              {qualityScore.lebenszufriedenheit.toFixed(1)}/10
+                            </span>
+                            <span className={`ml-1 text-xs ${
+                              darkMode ? 'text-gray-400' : 'text-gray-500'
+                            }`}>
+                              (SKL Glücksatlas)
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

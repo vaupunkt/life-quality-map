@@ -41,7 +41,7 @@ export default function Tooltip({ content, children, darkMode = false, position 
   }, [isVisible, position])
 
   const getTooltipClasses = () => {
-    const baseClasses = `absolute z-50 px-3 py-2 text-sm rounded-lg shadow-lg pointer-events-none transition-opacity duration-200 max-w-xs ${
+    const baseClasses = `absolute z-[9999] px-3 py-2 text-sm rounded-lg shadow-lg pointer-events-none transition-opacity duration-200 max-w-xs ${
       darkMode 
         ? 'bg-slate-700 text-gray-200 border border-slate-600' 
         : 'bg-gray-900 text-white border border-gray-700'

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as fs from 'fs'
+import * as path from 'path'
 
 // Hilfsfunktion zur Berechnung der Entfernung zwischen zwei Punkten in Metern
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -58,6 +60,69 @@ function removeDuplicates<T extends {lat: number, lng: number, name: string}>(it
   return filtered
 }
 
+// Funktion zum Ermitteln des Bundeslandes basierend auf Koordinaten
+async function getBundeslandFromCoordinates(lat: number, lng: number): Promise<{
+  bundesland: string | null, 
+  lebenszufriedenheit: number | null,
+  klimadaten: {temperatur: number, niederschlag: number, sonnenschein: number} | null
+}> {
+  try {
+    // Reverse Geocoding mit Nominatim API
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=5&addressdetails=1`
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Lebensqualitaets-Karte/1.0'
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error('Nominatim API error')
+    }
+    
+    const data = await response.json()
+    const state = data.address?.state || data.address?.city || null
+    
+    if (!state) {
+      return { bundesland: null, lebenszufriedenheit: null }
+    }
+    
+    // Lebenszufriedenheitsdaten laden
+    const dataPath = path.join(process.cwd(), 'src/data/lebenszufriedenheit.json')
+    const lebenszufriedenheitData = JSON.parse(fs.readFileSync(dataPath, 'utf8'))
+    
+    // Bundesland Namen normalisieren und matchen
+    const normalizedState = state.trim()
+    let lebenszufriedenheit = lebenszufriedenheitData[normalizedState] || null
+    
+    // Fallback für alternative Schreibweisen
+    if (!lebenszufriedenheit) {
+      const alternatives: {[key: string]: string} = {
+        'North Rhine-Westphalia': 'Nordrhein-Westfalen',
+        'Rhineland-Palatinate': 'Rheinland-Pfalz',
+        'Lower Saxony': 'Niedersachsen',
+        'Saxony-Anhalt': 'Sachsen-Anhalt',
+        'Mecklenburg-Western Pomerania': 'Mecklenburg-Vorpommern',
+        'Baden-Wurttemberg': 'Baden-Württemberg',
+        'Bavaria': 'Bayern',
+        'Thuringia': 'Thüringen',
+        'Saxony': 'Sachsen',
+        'Hesse': 'Hessen'
+      }
+      
+      const germanName = alternatives[normalizedState] || normalizedState
+      lebenszufriedenheit = lebenszufriedenheitData[germanName] || null
+    }
+    
+    return {
+      bundesland: normalizedState,
+      lebenszufriedenheit: lebenszufriedenheit
+    }
+  } catch (error) {
+    console.error('Error fetching Bundesland:', error)
+    return { bundesland: null, lebenszufriedenheit: null }
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { lat, lng, address, radius = 1000, categoryGroups, categoryVisibility } = await request.json()
@@ -84,6 +149,8 @@ async function calculateQualityScore(
   categoryGroups?: any,
   categoryVisibility?: any
 ) {
+  // Bundesland und Lebenszufriedenheit ermitteln
+  const bundeslandInfo = await getBundeslandFromCoordinates(lat, lng)
   // Definiere die Suchkategorien mit ihren OpenStreetMap-Tags
   const searchCategories = {
     kindergarten: ['kindergarten'],
@@ -412,13 +479,20 @@ async function calculateQualityScore(
       // Lärm- und Verkehrsbelastung immer berücksichtigen (negative Faktoren)
       overallScore += (10 - noiseScore) * 0.03 * totalWeight
       overallScore += (10 - trafficScore) * 0.03 * totalWeight
+      
+      // Lebenszufriedenheit des Bundeslandes einbeziehen (10% Gewichtung)
+      if (bundeslandInfo.lebenszufriedenheit) {
+        const lifeSatisfactionScore = Math.round((bundeslandInfo.lebenszufriedenheit / 10) * 10) // Normalisieren auf 0-10 Skala
+        overallScore += lifeSatisfactionScore * 0.1 * totalWeight
+        totalWeight += 0.1 * totalWeight
+      }
+      
       totalWeight += 0.06 * totalWeight
       
       overallScore = totalWeight > 0 ? Math.round(overallScore / totalWeight) : 0
     } else {
       // Fallback: Original-Berechnung
-      overallScore = Math.round(
-        (kindergartenScore * 0.08 + 
+      let baseScore = (kindergartenScore * 0.08 + 
          schoolScore * 0.08 + 
          supermarketScore * 0.08 + 
          doctorScore * 0.08 + 
@@ -434,9 +508,18 @@ async function calculateQualityScore(
          servicesScore * 0.04 +
          educationScore * 0.06 +
          (10 - noiseScore) * 0.03 + 
-         (10 - trafficScore) * 0.03) 
-      )
+         (10 - trafficScore) * 0.03)
+      
+      // Lebenszufriedenheit des Bundeslandes einbeziehen (10% Gewichtung)
+      if (bundeslandInfo.lebenszufriedenheit) {
+        const lifeSatisfactionScore = Math.round((bundeslandInfo.lebenszufriedenheit / 10) * 10) // Normalisieren auf 0-10 Skala
+        baseScore = baseScore * 0.9 + lifeSatisfactionScore * 0.1
+      }
+      
+      overallScore = Math.round(baseScore)
     }
+
+    // Bundesland und Lebenszufriedenheit sind bereits in bundeslandInfo verfügbar
 
     return {
       overall: overallScore,
@@ -462,6 +545,8 @@ async function calculateQualityScore(
       lat: lat,
       lng: lng,
       amenities: amenityDetails,
+      bundesland: bundeslandInfo.bundesland,
+      lebenszufriedenheit: bundeslandInfo.lebenszufriedenheit,
     }
   } catch (error) {
     console.error('Overpass API error:', error)
@@ -508,6 +593,8 @@ async function calculateQualityScore(
         education: [],
         hairdresser: []
       },
+      bundesland: null,
+      lebenszufriedenheit: null,
     }
   }
 }

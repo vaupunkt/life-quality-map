@@ -125,8 +125,23 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                     <li>• Vorgefertigte Gewichtungsprofile</li>
                     <li>• Interaktive Karte mit POI-Anzeige</li>
                     <li>• Detaillierte Bewertungsaufschlüsselung</li>
+                    <li>• Integration von Bundesland-Lebenszufriedenheit</li>
                   </ul>
                 </div>
+              </div>
+
+              <div className={`p-4 rounded-lg border-l-4 border-blue-500 ${
+                darkMode ? 'bg-slate-700' : 'bg-blue-50'
+              }`}>
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <span>🍀</span>
+                  SKL Glücksatlas Integration
+                </h4>
+                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Die Bewertung berücksichtigt auch die allgemeine Lebenszufriedenheit des jeweiligen 
+                  Bundeslandes basierend auf Daten des SKL Glücksatlas. Diese fließt mit 10% Gewichtung 
+                  in die Gesamtbewertung ein und reflektiert regionale Unterschiede in der Zufriedenheit.
+                </p>
               </div>
             </div>
           )}
@@ -205,6 +220,24 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                 <p className="text-sm mt-2">
                   <strong>Beispiel:</strong> Schulen (Score: 8) × Kategorie-Gewichtung (1.2) × Bildungs-Gruppengewichtung (1.0) = 9.6 Punkte
                 </p>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-semibold mb-3">🍀 Bundesland-Lebenszufriedenheit</h4>
+                <div className={`p-4 rounded-lg border-l-4 border-green-500 ${
+                  darkMode ? 'bg-green-900/20' : 'bg-green-50'
+                }`}>
+                  <p className="text-sm mb-3">
+                    Die Bewertung berücksichtigt zusätzlich die allgemeine Lebenszufriedenheit des jeweiligen Bundeslandes 
+                    basierend auf dem <strong>SKL Glücksatlas</strong>.
+                  </p>
+                  <div className="space-y-2 text-sm">
+                    <div><strong>Datenquelle:</strong> SKL Glücksatlas (wissenschaftliche Studie zur regionalen Lebenszufriedenheit)</div>
+                    <div><strong>Gewichtung:</strong> 10% der Gesamtbewertung</div>
+                    <div><strong>Skala:</strong> Originalwerte von 6,17 bis 7,38 werden auf 0-10 normalisiert</div>
+                    <div><strong>Beispiele:</strong> Hamburg (7,38), Bayern (7,23), Mecklenburg-Vorpommern (6,17)</div>
+                  </div>
+                </div>
               </div>
 
               <div>

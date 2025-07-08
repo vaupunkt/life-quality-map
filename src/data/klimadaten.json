@@ -1,0 +1,87 @@
+{
+  "Hamburg": {
+    "temperatur": 11.3,
+    "niederschlag": 946.9,
+    "sonnenschein": 1643.0
+  },
+  "Bayern": {
+    "temperatur": 10.3,
+    "niederschlag": 1070.4,
+    "sonnenschein": 1717.2
+  },
+  "Schleswig-Holstein": {
+    "temperatur": 10.8,
+    "niederschlag": 961.7,
+    "sonnenschein": 1646.9
+  },
+  "Nordrhein-Westfalen": {
+    "temperatur": 11.3,
+    "niederschlag": 1028.3,
+    "sonnenschein": 1499.7
+  },
+  "Rheinland-Pfalz": {
+    "temperatur": 10.9,
+    "niederschlag": 930.6,
+    "sonnenschein": 1585.5
+  },
+  "Baden-Württemberg": {
+    "temperatur": 10.3,
+    "niederschlag": 1068.9,
+    "sonnenschein": 1654.0
+  },
+  "Sachsen-Anhalt": {
+    "temperatur": 11.5,
+    "niederschlag": 613.2,
+    "sonnenschein": 1758.4
+  },
+  "Niedersachsen": {
+    "temperatur": 11.3,
+    "niederschlag": 920.7,
+    "sonnenschein": 1602.7
+  },
+  "Hessen": {
+    "temperatur": 10.7,
+    "niederschlag": 888.9,
+    "sonnenschein": 1568.2
+  },
+  "Brandenburg": {
+    "temperatur": 11.5,
+    "niederschlag": 601.9,
+    "sonnenschein": 1851.1
+  },
+  "Thüringen": {
+    "temperatur": 10.5,
+    "niederschlag": 790.5,
+    "sonnenschein": 1670.3
+  },
+  "Sachsen": {
+    "temperatur": 10.9,
+    "niederschlag": 711.2,
+    "sonnenschein": 1830.1
+  },
+  "Bremen": {
+    "temperatur": 11.4,
+    "niederschlag": 938.5,
+    "sonnenschein": 1637.6
+  },
+  "Saarland": {
+    "temperatur": 11.1,
+    "niederschlag": 1204.9,
+    "sonnenschein": 1588.5
+  },
+  "Berlin": {
+    "temperatur": 11.9,
+    "niederschlag": 549.9,
+    "sonnenschein": 1914.5
+  },
+  "Mecklenburg-Vorpommern": {
+    "temperatur": 11.0,
+    "niederschlag": 695.9,
+    "sonnenschein": 1762.1
+  },
+  "Deutschland": {
+    "temperatur": 10.9,
+    "niederschlag": 901.6,
+    "sonnenschein": 1675.3
+  }
+}
