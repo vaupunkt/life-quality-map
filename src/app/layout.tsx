@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     siteName: 'Lebensqualitäts-Karte',
     images: [
       {
-        url: '/og_screenshot.png',
+        url: '/og_screenshot.jpg',
         width: 1200,
         height: 630,
         alt: 'Lebensqualitäts-Karte - Entdecke die Lebensqualität in deiner Stadt',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Lebensqualitäts-Karte - Entdecke die Lebensqualität in deiner Stadt',
     description: '🍀 Interaktive Karte zur Bewertung der Lebensqualität basierend auf Bildung, Gesundheit, Freizeit und Infrastruktur.',
-    images: ['/og_screenshot.png'],
+    images: ['/og_screenshot.jpg'],
     creator: '@lebensqualitaet_karte',
   },
   robots: {
