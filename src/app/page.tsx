@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import SettingsModal from '@/components/SettingsModal'
@@ -252,7 +252,7 @@ function HomeContent() {
     if (qualityScore) {
       calculateQualityScore(qualityScore.lat, qualityScore.lng, qualityScore.address)
     }
-  }, [radiusSettings.activeRadius, radiusSettings.walking, radiusSettings.cycling, radiusSettings.driving])
+  }, [radiusSettings.activeRadius, radiusSettings.walking, radiusSettings.cycling, radiusSettings.driving]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update quality score when category settings change
   useEffect(() => {
@@ -270,7 +270,7 @@ function HomeContent() {
       
       return () => clearTimeout(timer)
     }
-  }, [categoryGroups]) // Nur categoryGroups als Dependency, da categoryVisibility davon abgeleitet wird
+  }, [categoryGroups]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSettingsSave = (newSettings: any) => {
     setRadiusSettings(newSettings)
@@ -302,7 +302,7 @@ function HomeContent() {
     }
   }
 
-  const calculateQualityScore = async (lat: number, lng: number, addressName: string) => {
+  const calculateQualityScore = useCallback(async (lat: number, lng: number, addressName: string) => {
     setMapLoading(true)
     
     try {
@@ -341,7 +341,7 @@ function HomeContent() {
       setMapLoading(false)
       setRecalculatingScore(false)
     }
-  }
+  }, [radiusSettings, categoryGroups, categoryVisibility])
 
   const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -548,7 +548,7 @@ function HomeContent() {
       // Automatisch analysieren wenn URL-Parameter vorhanden
       handleAddressSearch(decodedAddress)
     }
-  }, [searchParams])
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddressSearch = async (searchAddress: string = address) => {
     if (!searchAddress.trim()) return
@@ -1272,7 +1272,7 @@ function HomeContent() {
   }
 
   // Lokale Neuberechnung der Gesamtbewertung basierend auf Kategorienauswahl und Gewichtung
-  const recalculateScoreLocally = (currentScore: QualityScore): QualityScore => {
+  const recalculateScoreLocally = useCallback((currentScore: QualityScore): QualityScore => {
     let overallScore = 0
     let totalWeight = 0
     
@@ -1316,7 +1316,7 @@ function HomeContent() {
       ...currentScore,
       overall: Math.max(0, Math.min(10, newOverallScore)) // Begrenze auf 0-10
     }
-  }
+  }, [categoryGroups, categoryVisibility])
 
   // Gewichtungspresets basierend auf Zielgruppen
   const weightingPresets = {
@@ -1454,7 +1454,7 @@ function HomeContent() {
     if (currentPreset !== selectedPreset) {
       setSelectedPreset(currentPreset)
     }
-  }, [categoryGroups])
+  }, [categoryGroups]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const getCategoryExamples = (categoryKey: string): string => {
     const examples = {

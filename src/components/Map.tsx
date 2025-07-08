@@ -418,7 +418,7 @@ export default function Map({
         mapRef.current.invalidateSize()
       }
     }, 100)
-  }, [qualityScore, radiusSettings, showHeatmap, categoryVisibility, currentMarkerPage])
+  }, [qualityScore, radiusSettings, showHeatmap, categoryVisibility, currentMarkerPage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset marker page when quality score or category visibility changes
   useEffect(() => {
