@@ -160,20 +160,6 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                 darkMode ? 'bg-slate-700' : 'bg-blue-50'
               }`}>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <span>🌎</span>
-                  Umweltdaten Integration
-                </h4>
-                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Die Anwendung kombiniert offizielle Klimadaten (Temperatur, Niederschlag, Sonnenschein) 
-                  mit regionaler Lebenszufriedenheit für eine umfassende Umweltbewertung. 
-                  Aktivieren Sie den Umweltdaten-Toggle für detaillierte Einblicke.
-                </p>
-              </div>
-
-              <div className={`p-4 rounded-lg border-l-4 border-blue-500 ${
-                darkMode ? 'bg-slate-700' : 'bg-blue-50'
-              }`}>
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <span>🍀</span>
                   SKL Glücksatlas Integration
                 </h4>
@@ -602,7 +588,7 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                       <div><strong>Sehr warm (&gt;16°C):</strong> Score = max(0, 3 - (Temperatur-16) × 0.7)</div>
                       <div><strong>Außerhalb ideal:</strong> Starker Abfall mit Penalty × 2.5</div>
                       <div className="text-green-600"><strong>Beispiel:</strong> Hamburg 11,3°C → Score: 10/10</div>
-                      <div className="text-red-600"><strong>Verschärft:</strong> Extreme Temperaturen führen zu drastischen Score-Abfällen</div>
+                     
                     </div>
                   </div>
 
@@ -617,7 +603,7 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                       <div><strong>Sehr nass (&gt;1200mm):</strong> Score = max(0, 2 - (Niederschlag-1200) ÷ 150)</div>
                       <div><strong>Engerer Idealbereich:</strong> Nur ±50mm um 800mm = voller Score</div>
                       <div className="text-orange-600"><strong>Beispiel:</strong> Bayern 1070,4mm → Score: 4/10</div>
-                      <div className="text-red-600"><strong>Verschärft:</strong> Extreme werden noch härter bestraft</div>
+                     
                     </div>
                   </div>
 
@@ -632,7 +618,7 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                       <div><strong>Zu viel (&gt;2200h):</strong> Score = max(2, 8 - (Sonnenstunden-2200) ÷ 100)</div>
                       <div><strong>Optimal bei 1700h:</strong> Weniger Gewichtung, aber präzisere Bewertung</div>
                       <div className="text-green-600"><strong>Beispiel:</strong> Brandenburg 1851,1h → Score: 8/10</div>
-                      <div className="text-red-600"><strong>Verschärft:</strong> Extreme Hitze (zu viel Sonne) wird bestraft</div>
+                     
                     </div>
                   </div>
 
@@ -642,8 +628,7 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                     <h6 className="font-semibold text-red-600 mb-2">Zusätzliche Extreme-Penalty</h6>
                     <div className="text-sm space-y-1">
                       <li>• <strong>Kombinierte Extreme:</strong> -1.5 Punkte bei extremer Temperatur UND extremem Niederschlag</li>
-                      <li>• <strong>Härtere Grenzen:</strong> Engere optimale Bereiche, steilere Abfälle</li>
-                      <li>• <strong>Verschärfte Gewichtung:</strong> Temperatur wird stärker bewertet (45% statt 40%)</li>
+              
                     </div>
                   </div>
                 </div>
@@ -651,7 +636,7 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
                 <div className={`p-4 rounded-lg font-mono text-sm ${
                   darkMode ? 'bg-slate-700' : 'bg-gray-100'
                 } mt-4`}>
-                  <strong>Klima-Gesamtscore (Verschärft):</strong><br/>
+                  <strong>Klima-Gesamtscore:</strong><br/>
                   (Temperatur × 0.45) + (Niederschlag × 0.35) + (Sonnenschein × 0.2) - Extreme-Penalty
                 </div>
               </div>

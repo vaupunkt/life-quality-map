@@ -99,16 +99,26 @@ export default function Home() {
   const [showInfo, setShowInfo] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   
-  // Mobile Detection
+  // Mobile Detection (verbessert)
   const [isMobile, setIsMobile] = useState(false)
   
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
+      const userAgent = typeof window !== 'undefined' ? navigator.userAgent : ''
+      const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i
+      const isMobileDevice = mobileRegex.test(userAgent) || window.innerWidth <= 768
+      setIsMobile(isMobileDevice)
+      console.log('Mobile Detection:', isMobileDevice, userAgent) // Debug
     }
+    
     checkMobile()
     window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
+    window.addEventListener('orientationchange', checkMobile)
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+      window.removeEventListener('orientationchange', checkMobile)
+    }
   }, [])
   
   const [radiusSettings, setRadiusSettings] = useState({
@@ -407,7 +417,7 @@ export default function Home() {
     )
   }
 
-  // URL-Parameter Management
+  // URL-Parameter Management mit Meta-Tag Updates
   const updateURL = (address: string) => {
     if (typeof window === 'undefined') return // SSR check
     
@@ -422,14 +432,95 @@ export default function Home() {
         
         // Aktualisiere den Seitentitel
         document.title = `Lebensqualität in ${address} - Lebensqualitäts-Karte`
+        
+        // Aktualisiere Meta-Tags für Social Sharing
+        updateMetaTags(address)
       } else {
         const newUrl = `${window.location.origin}${window.location.pathname}`
         window.history.replaceState(null, '', newUrl)
         console.log('URL reset to:', newUrl)
         document.title = 'Lebensqualitäts-Karte - Entdecke die Lebensqualität in deiner Stadt'
+        
+        // Reset Meta-Tags
+        updateMetaTags(null)
       }
     } catch (error) {
       console.error('Error updating URL:', error)
+    }
+  }
+
+  // Update Meta Tags für Social Sharing
+  const updateMetaTags = (address: string | null) => {
+    if (typeof window === 'undefined') return
+    
+    try {
+      // OG Title
+      const ogTitle = document.querySelector('meta[property="og:title"]')
+      const title = address 
+        ? `Lebensqualität in ${address} - Lebensqualitäts-Karte`
+        : 'Lebensqualitäts-Karte - Entdecke die Lebensqualität in deiner Stadt'
+      
+      if (ogTitle) {
+        ogTitle.setAttribute('content', title)
+      } else {
+        const newOgTitle = document.createElement('meta')
+        newOgTitle.setAttribute('property', 'og:title')
+        newOgTitle.setAttribute('content', title)
+        document.head.appendChild(newOgTitle)
+      }
+      
+      // OG Description
+      const ogDescription = document.querySelector('meta[property="og:description"]')
+      const description = address
+        ? `🍀 Entdecke die Lebensqualität in ${address}! Bewertung basierend auf Bildung, Gesundheit, Freizeit und Infrastruktur.`
+        : '🍀 Interaktive Karte zur Bewertung der Lebensqualität basierend auf Bildung, Gesundheit, Freizeit und Infrastruktur.'
+      
+      if (ogDescription) {
+        ogDescription.setAttribute('content', description)
+      } else {
+        const newOgDescription = document.createElement('meta')
+        newOgDescription.setAttribute('property', 'og:description')
+        newOgDescription.setAttribute('content', description)
+        document.head.appendChild(newOgDescription)
+      }
+      
+      // OG URL
+      const ogUrl = document.querySelector('meta[property="og:url"]')
+      const currentUrl = window.location.href
+      
+      if (ogUrl) {
+        ogUrl.setAttribute('content', currentUrl)
+      } else {
+        const newOgUrl = document.createElement('meta')
+        newOgUrl.setAttribute('property', 'og:url')
+        newOgUrl.setAttribute('content', currentUrl)
+        document.head.appendChild(newOgUrl)
+      }
+      
+      // Twitter Title
+      const twitterTitle = document.querySelector('meta[name="twitter:title"]')
+      if (twitterTitle) {
+        twitterTitle.setAttribute('content', title)
+      } else {
+        const newTwitterTitle = document.createElement('meta')
+        newTwitterTitle.setAttribute('name', 'twitter:title')
+        newTwitterTitle.setAttribute('content', title)
+        document.head.appendChild(newTwitterTitle)
+      }
+      
+      // Twitter Description
+      const twitterDescription = document.querySelector('meta[name="twitter:description"]')
+      if (twitterDescription) {
+        twitterDescription.setAttribute('content', description)
+      } else {
+        const newTwitterDescription = document.createElement('meta')
+        newTwitterDescription.setAttribute('name', 'twitter:description')
+        newTwitterDescription.setAttribute('content', description)
+        document.head.appendChild(newTwitterDescription)
+      }
+      
+    } catch (error) {
+      console.error('Error updating meta tags:', error)
     }
   }
 
@@ -628,18 +719,18 @@ export default function Home() {
     ctx.fill()
     ctx.restore()
     
-    // Score-Text (angepasst an kleineren Kreis)
+    // Score-Text (zentriert im Kreis)
     ctx.fillStyle = '#ffffff'
     ctx.font = 'bold 80px system-ui'
     ctx.textAlign = 'center'
     ctx.shadowColor = 'rgba(0, 0, 0, 0.4)'
     ctx.shadowBlur = 6
-    ctx.fillText(Math.round(score).toString(), scoreCenterX, scoreCenterY + 25)
+    ctx.fillText(Math.round(score).toString(), scoreCenterX, scoreCenterY )
     
     ctx.shadowColor = 'transparent'
     ctx.font = 'bold 32px system-ui'
     ctx.fillStyle = darkMode ? '#e2e8f0' : '#c8ced7'
-    ctx.fillText('von 10', scoreCenterX, scoreCenterY + 55)
+    ctx.fillText('von 10', scoreCenterX, scoreCenterY + 35)
     ctx.fillStyle = darkMode ? '#10b981' : '#059669'
     ctx.font = 'bold 48px system-ui'
     ctx.textAlign = 'center'
@@ -840,6 +931,13 @@ export default function Home() {
     ctx.fillText('📍', centerMapX, centerMapY + 10)
     ctx.restore()
     
+    // Footer mit "made with love" in weißem Bereich
+    ctx.fillStyle = darkMode ? '#64748b' : '#94a3b8'
+    ctx.font = '20px system-ui'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillText('made with ❤️ from Greifswald', canvas.width / 2, canvas.height - 90)
+    
     return canvas.toDataURL('image/png')
   }
   
@@ -935,9 +1033,7 @@ export default function Home() {
       // URL in Zwischenablage kopieren
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(window.location.href)
-        alert('Bild wurde heruntergeladen und URL in die Zwischenablage kopiert!')
       } else {
-        alert('Bild wurde heruntergeladen!')
       }
     } catch (error) {
       console.error('Fehler beim Teilen:', error)
@@ -1827,7 +1923,7 @@ export default function Home() {
                     )}
                     
                     {/* Share & Copy Buttons */}
-                    <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                    <div className="mt-6 flex flex-row gap-2 justify-center">
                       <Tooltip content="Kopiere die URL dieser Analyse in die Zwischenablage zum einfachen Teilen" darkMode={darkMode}>
                         <button
                           onClick={handleCopyURL}
@@ -1842,7 +1938,7 @@ export default function Home() {
                         </button>
                       </Tooltip>
                       
-                      <Tooltip content={isMobile ? "Teile deine Lebensqualitäts-Analyse mit anderen Apps" : "Teile deine Lebensqualitäts-Analyse als Bild mit Freunden und Familie"} darkMode={darkMode}>
+                      {isMobile ? <Tooltip content={isMobile ? "Teile deine Lebensqualitäts-Analyse mit anderen Apps" : "Teile deine Lebensqualitäts-Analyse als Bild mit Freunden und Familie"} darkMode={darkMode}>
                         <button
                           onClick={handleShare}
                           className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
@@ -1851,40 +1947,13 @@ export default function Home() {
                               : 'bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white'
                           }`}
                         >
-                          <span className="text-xl">{isMobile ? '�' : '�📤'}</span>
+                          <span className="text-xl">{isMobile ? '📱' : '🖼️'}</span>
                           <span>{isMobile ? 'Teilen' : 'Als Bild teilen'}</span>
                         </button>
-                      </Tooltip>
+                      </Tooltip> : null}
                       
                       {/* Download Button nur auf mobilen Geräten */}
-                      {isMobile && (
-                        <Tooltip content="Lade das Bild der Lebensqualitäts-Analyse herunter" darkMode={darkMode}>
-                          <button
-                            onClick={async () => {
-                              try {
-                                const imageDataUrl = await generateShareImage()
-                                if (imageDataUrl) {
-                                  const link = document.createElement('a')
-                                  link.download = `lebensqualitaet-${qualityScore?.address.replace(/[^a-zA-Z0-9]/g, '-') || 'analyse'}.png`
-                                  link.href = imageDataUrl
-                                  link.click()
-                                }
-                              } catch (error) {
-                                console.error('Fehler beim Herunterladen:', error)
-                                alert('Fehler beim Herunterladen des Bildes')
-                              }
-                            }}
-                            className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
-                              darkMode 
-                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white' 
-                                : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
-                            }`}
-                          >
-                            <span className="text-xl">💾</span>
-                            <span>Bild downloaden</span>
-                          </button>
-                        </Tooltip>
-                      )}
+                      
                     </div>
                   </div>
                 </div>
