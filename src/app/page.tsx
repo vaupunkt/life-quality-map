@@ -5,81 +5,15 @@ import {  useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import SettingsModal from '@/components/SettingsModal'
 import InfoModal from '@/components/InfoModal'
+import updateURL from './utils/updateURL'
+import handleAddressSearch from './utils/handleAddressSearch'
+import { ActiveCategories, CategoryGroup, QualityScore, RadiusSettings } from './utils/types'
 
 // Dynamically import the Map component to avoid SSR issues
 const Map = dynamic(() => import('@/components/MapWrapper'), {
   ssr: false,
   loading: () => <div className="h-96 w-full bg-gray-200 animate-pulse rounded-lg"></div>
 })
-
-interface QualityScore {
-  overall: number
-  kindergarten: number
-  schools: number
-  supermarkets: number
-  doctors: number
-  pharmacies: number
-  culture: number
-  sports: number
-  parks: number
-  transport: number
-  cycling: number
-  restaurants: number
-  shopping: number
-  finance: number
-  safety: number
-  services: number
-  education: number
-  hairdresser: number
-  noise: number
-  traffic: number
-  address: string
-  lat: number
-  lng: number
-  bundesland?: string | null
-  lebenszufriedenheit?: number | null
-  klimadaten?: {temperatur: number, niederschlag: number, sonnenschein: number} | null
-  klimaScore?: number
-  temperatur?: number
-  niederschlag?: number
-  sonnenschein?: number
-  amenities?: {
-    kindergartens: Array<{lat: number, lng: number, name: string}>
-    schools: Array<{lat: number, lng: number, name: string}>
-    supermarkets: Array<{lat: number, lng: number, name: string}>
-    doctors: Array<{lat: number, lng: number, name: string}>
-    pharmacies: Array<{lat: number, lng: number, name: string}>
-    culture: Array<{lat: number, lng: number, name: string, type: string}>
-    sports: Array<{lat: number, lng: number, name: string, type: string}>
-    parks: Array<{lat: number, lng: number, name: string}>
-    transport: Array<{lat: number, lng: number, name: string, type: string}>
-    cycling: Array<{lat: number, lng: number, name: string, type: string}>
-    restaurants: Array<{lat: number, lng: number, name: string, type: string}>
-    shopping: Array<{lat: number, lng: number, name: string, type: string}>
-    finance: Array<{lat: number, lng: number, name: string, type: string}>
-    safety: Array<{lat: number, lng: number, name: string, type: string}>
-    services: Array<{lat: number, lng: number, name: string, type: string}>
-    education: Array<{lat: number, lng: number, name: string, type: string}>
-    hairdresser: Array<{lat: number, lng: number, name: string, type: string}>
-  }
-}
-
-interface CategoryItem {
-  key: string
-  label: string
-  weight: number
-  enabled: boolean
-}
-
-interface CategoryGroup {
-  title: string
-  icon: string
-  weight: number
-  order: number
-  categories: CategoryItem[]
-  isOpen: boolean
-  enabled: boolean
-}
 
 export default function Home() {
   return (
@@ -105,7 +39,6 @@ function HomeContent() {
   const [qualityScore, setQualityScore] = useState<QualityScore | null>(null)
   const [error, setError] = useState('')
   const [showEnviromentData, setShowEnviromentData] = useState(true)
-  const [showHeatmap, setShowHeatmap] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
@@ -130,12 +63,13 @@ function HomeContent() {
       window.removeEventListener('orientationchange', checkMobile)
     }
   }, [])
-  
-  const [radiusSettings, setRadiusSettings] = useState({
+
+
+  const [radiusSettings, setRadiusSettings] = useState<RadiusSettings>({
     walking: 500,     // 500m walking distance
     cycling: 1500,    // 1.5km cycling distance
     driving: 3000,    // 3km driving distance
-    activeRadius: 'walking' as 'walking' | 'cycling' | 'driving'
+    activeRadius: 'walking'
   })
 
   const [categoryGroups, setCategoryGroups] = useState<{[key: string]: CategoryGroup}>({
@@ -208,7 +142,7 @@ function HomeContent() {
     }
   })
 
-  const [expandedGroups, setExpandedGroups] = useState<{[key: string]: boolean}>({
+  const [expandedGroups, setExpandedGroups] = useState<ActiveCategories>({
     bildung: false,
     gesundheit: false,
     freizeit: false,
@@ -417,143 +351,15 @@ function HomeContent() {
     )
   }
 
-  // URL parameter management with meta tag updates
-  const updateURL = useCallback((address: string) => {
-    if (typeof window === 'undefined') return // SSR check
-    
-    try {
-      if (address) {
-        const cleanAddress = address.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-').toLowerCase()
-        const newUrl = `${window.location.origin}${window.location.pathname}?ort=${encodeURIComponent(address)}#${cleanAddress}`
-        
-        window.history.replaceState(null, '', newUrl)
-        console.log('URL updated to:', newUrl)
-        
-        document.title = `Lebensqualität in ${address} - Lebensqualitäts-Karte`
-
-        updateMetaTags(address)
-      } else {
-        const newUrl = `${window.location.origin}${window.location.pathname}`
-        window.history.replaceState(null, '', newUrl)
-        console.log('URL reset to:', newUrl)
-        document.title = 'Lebensqualitäts-Karte - Entdecke die Lebensqualität in deiner Stadt'
-        
-        updateMetaTags(null)
-      }
-    } catch (error) {
-      console.error('Error updating URL:', error)
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Update Meta Tags for Social Sharing
-  const updateMetaTags = useCallback((address: string | null) => {
-    if (typeof window === 'undefined') return
-    
-    try {
-      // OG Title
-      const ogTitle = document.querySelector('meta[property="og:title"]')
-      const title = address 
-        ? `Lebensqualität in ${address} - Lebensqualitäts-Karte`
-        : 'Lebensqualitäts-Karte - Entdecke die Lebensqualität in deiner Stadt'
-      
-      if (ogTitle) {
-        ogTitle.setAttribute('content', title)
-      } else {
-        const newOgTitle = document.createElement('meta')
-        newOgTitle.setAttribute('property', 'og:title')
-        newOgTitle.setAttribute('content', title)
-        document.head.appendChild(newOgTitle)
-      }
-      
-      // OG Description
-      const ogDescription = document.querySelector('meta[property="og:description"]')
-      const description = address
-        ? `🍀 Entdecke die Lebensqualität in ${address}! Bewertung basierend auf Bildung, Gesundheit, Freizeit und Infrastruktur.`
-        : '🍀 Interaktive Karte zur Bewertung der Lebensqualität basierend auf Bildung, Gesundheit, Freizeit und Infrastruktur.'
-      
-      if (ogDescription) {
-        ogDescription.setAttribute('content', description)
-      } else {
-        const newOgDescription = document.createElement('meta')
-        newOgDescription.setAttribute('property', 'og:description')
-        newOgDescription.setAttribute('content', description)
-        document.head.appendChild(newOgDescription)
-      }
-      
-      // OG URL
-      const ogUrl = document.querySelector('meta[property="og:url"]')
-      const currentUrl = window.location.href
-      
-      if (ogUrl) {
-        ogUrl.setAttribute('content', currentUrl)
-      } else {
-        const newOgUrl = document.createElement('meta')
-        newOgUrl.setAttribute('property', 'og:url')
-        newOgUrl.setAttribute('content', currentUrl)
-        document.head.appendChild(newOgUrl)
-      }
-      
-      // Twitter Title
-      const twitterTitle = document.querySelector('meta[name="twitter:title"]')
-      if (twitterTitle) {
-        twitterTitle.setAttribute('content', title)
-      } else {
-        const newTwitterTitle = document.createElement('meta')
-        newTwitterTitle.setAttribute('name', 'twitter:title')
-        newTwitterTitle.setAttribute('content', title)
-        document.head.appendChild(newTwitterTitle)
-      }
-      
-      // Twitter Description
-      const twitterDescription = document.querySelector('meta[name="twitter:description"]')
-      if (twitterDescription) {
-        twitterDescription.setAttribute('content', description)
-      } else {
-        const newTwitterDescription = document.createElement('meta')
-        newTwitterDescription.setAttribute('name', 'twitter:description')
-        newTwitterDescription.setAttribute('content', description)
-        document.head.appendChild(newTwitterDescription)
-      }
-      
-    } catch (error) {
-      console.error('Error updating meta tags:', error)
-    }
-  }, [])
-
   useEffect(() => {
     const ortParam = searchParams.get('ort')
     if (ortParam && !address && !qualityScore) {
       const decodedAddress = decodeURIComponent(ortParam)
       setAddress(decodedAddress)
-      handleAddressSearch(decodedAddress)
+      handleAddressSearch(decodedAddress, setLoading, setError, calculateQualityScore)
     }
   }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleAddressSearch = async (searchAddress: string = address) => {
-    if (!searchAddress.trim()) return
-    updateURL(searchAddress)
-    
-    setLoading(true)
-    setError('')
-
-    try {
-      // Geocoding API call
-      const response = await fetch(`/api/geocode?address=${encodeURIComponent(searchAddress)}`)
-      const data = await response.json()
-
-      if (data.error) {
-        setError(data.error)
-        return
-      }
-
-      // Calculate quality score
-      await calculateQualityScore(data.lat, data.lng, searchAddress)
-    } catch (err) {
-      setError('Fehler beim Laden der Daten')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // Share-Funktionalität - Instagram Story Format (größere Schrift & sichtbare Karte)
   const generateShareImage = async () => {
@@ -2214,7 +2020,6 @@ function HomeContent() {
                     <Map 
                       qualityScore={qualityScore} 
                       onLocationClick={handleLocationClick}
-                      showHeatmap={showHeatmap}
                       radiusSettings={radiusSettings}
                       categoryVisibility={categoryVisibility}
                     />
@@ -2295,7 +2100,6 @@ function HomeContent() {
                 <Map 
                   qualityScore={qualityScore} 
                   onLocationClick={handleLocationClick}
-                  showHeatmap={showHeatmap}
                   radiusSettings={radiusSettings}
                   categoryVisibility={categoryVisibility}
                 />
