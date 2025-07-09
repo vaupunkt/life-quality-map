@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { MapWrapperProps } from '@/app/utils/types'
+import { MapWrapperProps } from '@/utils/types'
 
 // Dynamically import the Map component to avoid SSR issues
 const Map = dynamic(() => import('./Map'), {
