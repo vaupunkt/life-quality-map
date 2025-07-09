@@ -95,3 +95,7 @@
     categoryVisibility?: {[key: string]: boolean}
   }
   
+  export type WeightOption = {
+    value: number
+    label: string
+  }

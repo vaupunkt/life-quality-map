@@ -7,7 +7,7 @@ import SettingsModal from '@/components/SettingsModal'
 import InfoModal from '@/components/InfoModal'
 import updateURL from './utils/updateURL'
 import handleAddressSearch from './utils/handleAddressSearch'
-import { ActiveCategories, CategoryGroup, QualityScore, RadiusSettings } from './utils/types'
+import { ActiveCategories, CategoryGroup, QualityScore, RadiusSettings, WeightOption } from './utils/types'
 
 // Dynamically import the Map component to avoid SSR issues
 const Map = dynamic(() => import('@/components/MapWrapper'), {
@@ -1007,7 +1007,7 @@ function HomeContent() {
     return 'unwichtig'
   }
 
-  const weightOptions = [
+  const weightOptions: WeightOption[] = [
     { value: 1.2, label: 'sehr wichtig' },
     { value: 1.1, label: 'wichtig' },
     { value: 1.0, label: 'neutral' },
