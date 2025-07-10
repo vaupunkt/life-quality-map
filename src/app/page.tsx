@@ -11,6 +11,7 @@ import { ActiveCategories, CategoryGroup, QualityScore, RadiusSettings, WeightOp
 import generateShareImage from '@/utils/generateShareImage'
 import { categoryVisibility, getCategoryColor, getScoreColor, getScoreTextColor, getTotalVisibleMarkers, getWeightLabel, recalculateScoreLocally, toggleCategoryVisibility, toggleGroupVisibility, updateCategoryWeight, updateGroupWeight, weightingPresets, weightOptions } from './helper/helperFunctions'
 import { useTopPlaces } from './helper/useTopPlaces'
+import { shareOnMobile } from 'react-mobile-share'
 
 // Dynamically import the Map component to avoid SSR issues
 const Map = dynamic(() => import('@/components/MapWrapper'), {
@@ -406,11 +407,11 @@ function HomeContent() {
       
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
       
-      if (navigator.share && isMobile) {
+      if (isMobile) {
         try {
             console.log('navigator.share() supported, attempting to share...')
-            await navigator.share({
-              files: [shareData.files[0]],
+            shareOnMobile({
+              images: [imageDataUrl],
               title: shareData.title,
               text: shareData.text,
               url: shareData.url,
@@ -424,10 +425,17 @@ function HomeContent() {
         }
       }
       else if (navigator.clipboard) {
-        const link = document.createElement('a')
-        link.download = `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`
-        link.href = imageDataUrl
-        link.click()
+        navigator.share({
+          title: shareData.title,
+          text: shareData.text,
+          url: shareData.url,
+          files: shareData.files
+        }).then(() => {
+          console.log('Ergebnisse erfolgreich geteilt!')
+        }).catch((error) => {
+          console.error('Fehler beim Teilen:', error)
+          alert('Fehler beim Teilen der Ergebnisse')
+        })
         
         await navigator.clipboard.writeText(currentUrl)
       } else {
@@ -1057,7 +1065,7 @@ function HomeContent() {
                       </button>
                       
                     
-                        {/* <button
+                       {isMobile && currentUrl.contains("https") ? <button
                           onClick={handleShare}
                           className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
                             darkMode 
@@ -1068,7 +1076,7 @@ function HomeContent() {
                         >
                           <span className="text-xl">{isMobile ? '📱' : '🖼️'}</span>
                           <span>{isMobile ? 'Teilen' : 'Als Bild teilen'}</span>
-                        </button> */}
+                        </button> : null}
                
                                             
                     </div>
