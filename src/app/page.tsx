@@ -209,7 +209,7 @@ function HomeContent() {
       
       setAddress(clickedAddress)
       setCoordinates({ lat, lng })
-      updateURL(clickedAddress, { lat, lng })
+      updateURL(clickedAddress, { lat, lng }, setCurrentUrl)
       
       await calculateQualityScore(lat, lng, clickedAddress)
     } catch (err) {
@@ -244,7 +244,7 @@ function HomeContent() {
       }
       setQualityScore(scoreData)
       if (addressName && coordinates) {
-        updateURL(addressName, coordinates)
+        updateURL(addressName, coordinates,setCurrentUrl)
         console.log('URL updated after quality score calculation:', addressName)
       }
       // Top10-Liste nach erfolgreichem Score-API-Call aktualisieren
@@ -278,7 +278,7 @@ function HomeContent() {
       await calculateQualityScore(data.lat, data.lng, address)
       
       // Update URL after successful address input
-      updateURL(address, { lat: data.lat, lng: data.lng })
+      updateURL(address, { lat: data.lat, lng: data.lng }, setCurrentUrl)
     } catch (err) {
       setError('Fehler beim Laden der Daten')
     } finally {
@@ -1057,7 +1057,7 @@ function HomeContent() {
                       </button>
                       
                     
-                        <button
+                        {/* <button
                           onClick={handleShare}
                           className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
                             darkMode 
@@ -1068,7 +1068,7 @@ function HomeContent() {
                         >
                           <span className="text-xl">{isMobile ? '📱' : '🖼️'}</span>
                           <span>{isMobile ? 'Teilen' : 'Als Bild teilen'}</span>
-                        </button>
+                        </button> */}
                
                                             
                     </div>
