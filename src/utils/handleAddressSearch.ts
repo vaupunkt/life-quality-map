@@ -1,18 +1,23 @@
 import updateURL from "./updateURL"
 
 const handleAddressSearch = async (searchAddress: string, 
+    coordinates: { lat: number; lng: number } | null,
     setLoading: (loading: boolean) => void, 
     setError: (error: string) => void,
     calculateQualityScore: (lat: number, lng: number, addressName: string) => Promise<void>) => {
     if (!searchAddress.trim()) return
-    updateURL(searchAddress)
+    if (!coordinates) {
+      setError('Coordinates are required')
+      return
+    }
+    updateURL(searchAddress, coordinates)
     
     setLoading(true)
     setError('')
 
     try {
       // Geocoding API call
-      const response = await fetch(`/api/geocode?address=${encodeURIComponent(searchAddress)}`)
+      const response = await fetch(`/api/geocode?lat=${coordinates.lat}&lng=${coordinates.lng}`)
       const data = await response.json()
 
       if (data.error) {

@@ -56,7 +56,6 @@ interface QualityScore {
 interface MapProps {
   qualityScore: QualityScore | null
   onLocationClick?: (lat: number, lng: number) => void
-  showHeatmap?: boolean
   radiusSettings?: {
     walking: number
     cycling: number  
@@ -69,7 +68,6 @@ interface MapProps {
 export default function Map({ 
   qualityScore, 
   onLocationClick, 
-  showHeatmap = false, 
   radiusSettings = {
     walking: 400,
     cycling: 1200,
@@ -178,7 +176,7 @@ export default function Map({
         radiusCircleRef.current = null
       }
     }
-  }, []) // Remove onLocationClick from dependencies to prevent recreation
+  }, [])
 
   // Separate effect for click handler updates
   useEffect(() => {
@@ -195,67 +193,7 @@ export default function Map({
         onLocationClick(e.latlng.lat, e.latlng.lng)
       }
     })
-  }, [onLocationClick]) // Added onLocationClick to dependencies to fix the warning
-
-  const generateHeatmapData = (centerLat: number, centerLng: number) => {
-    const heatmapData = []
-    const gridSize = 0.005 // Approximately 500m spacing
-    const range = 0.02 // About 2km range
-    
-    for (let lat = centerLat - range; lat <= centerLat + range; lat += gridSize) {
-      for (let lng = centerLng - range; lng <= centerLng + range; lng += gridSize) {
-        // Simulate higher pollution near main roads (simplified)
-        const distanceFromCenter = Math.sqrt(
-          Math.pow(lat - centerLat, 2) + Math.pow(lng - centerLng, 2)
-        )
-        
-        // Random pollution value with higher values near center (simulating urban density)
-        const baseIntensity = Math.max(0, 1 - (distanceFromCenter / range))
-        const intensity = baseIntensity * (0.3 + Math.random() * 0.7)
-        
-        if (intensity > 0.2) {
-          heatmapData.push({
-            lat,
-            lng,
-            intensity: intensity
-          })
-        }
-      }
-    }
-    
-    return heatmapData
-  }
-
-  // Create heatmap visualization
-  const createHeatmap = (data: Array<{lat: number, lng: number, intensity: number}>) => {
-    if (!heatmapRef.current) return
-
-    heatmapRef.current.clearLayers()
-
-    data.forEach(point => {
-      const color = point.intensity > 0.7 ? '#dc2626' : 
-                   point.intensity > 0.4 ? '#f59e0b' : '#22c55e'
-      
-      const circle = L.circle([point.lat, point.lng], {
-        radius: 100,
-        fillColor: color,
-        fillOpacity: 0.3,
-        color: color,
-        weight: 1,
-        opacity: 0.6
-      })
-      
-      circle.bindPopup(`
-        <div>
-          <strong>Luftqualität</strong><br>
-          Belastung: ${Math.round(point.intensity * 100)}%<br>
-          <small>Simulierte Daten</small>
-        </div>
-      `)
-      
-      heatmapRef.current!.addLayer(circle)
-    })
-  }
+  }, [onLocationClick])
 
   useEffect(() => {
     if (!mapRef.current || !qualityScore) return
@@ -392,13 +330,6 @@ export default function Map({
       })
     }
 
-    // Add heatmap if requested
-    if (showHeatmap) {
-      const heatmapData = generateHeatmapData(qualityScore.lat, qualityScore.lng)
-      createHeatmap(heatmapData)
-    } else if (heatmapRef.current) {
-      heatmapRef.current.clearLayers()
-    }
     
     // Center map on the marker with appropriate zoom based on radius
     setTimeout(() => {
@@ -419,7 +350,7 @@ export default function Map({
         mapRef.current.invalidateSize()
       }
     }, 100)
-  }, [qualityScore, radiusSettings, showHeatmap, categoryVisibility, currentMarkerPage]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [qualityScore, radiusSettings, categoryVisibility, currentMarkerPage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset marker page when quality score or category visibility changes
   useEffect(() => {

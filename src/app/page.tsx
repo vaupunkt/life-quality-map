@@ -34,6 +34,7 @@ export default function Home() {
 function HomeContent() {
   const searchParams = useSearchParams()
   const [address, setAddress] = useState('')
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
   const [loading, setLoading] = useState(false)
   const [mapLoading, setMapLoading] = useState(false)
   const [recalculatingScore, setRecalculatingScore] = useState(false)
@@ -203,6 +204,8 @@ function HomeContent() {
       const clickedAddress = reverseData.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
       
       setAddress(clickedAddress)
+      setCoordinates({ lat, lng })
+      updateURL(clickedAddress, { lat, lng })
       
       await calculateQualityScore(lat, lng, clickedAddress)
     } catch (err) {
@@ -242,8 +245,8 @@ function HomeContent() {
 
       setQualityScore(scoreData)
       
-      if (addressName) {
-        updateURL(addressName)
+      if (addressName && coordinates) {
+        updateURL(addressName, coordinates)
         console.log('URL updated after quality score calculation:', addressName)
       }
     } finally {
@@ -255,13 +258,17 @@ function HomeContent() {
   const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!address.trim()) return
+    if (!coordinates) {
+      setError('Bitte wählen Sie einen Ort auf der Karte oder geben Sie eine Adresse ein.')
+      return
+    }
 
     setLoading(true)
     setError('')
 
     try {
       // Geocoding API call
-      const response = await fetch(`/api/geocode?address=${encodeURIComponent(address)}`)
+      const response = await fetch(`/api/geocode?lat=${coordinates.lat}&lng=${coordinates.lng}`)
       const data = await response.json()
 
       if (data.error) {
@@ -273,7 +280,7 @@ function HomeContent() {
       await calculateQualityScore(data.lat, data.lng, address)
       
       // Update URL after successful address input
-      updateURL(address)
+      updateURL(address, { lat: data.lat, lng: data.lng })
       console.log('URL updated after address submission:', address)
     } catch (err) {
       setError('Fehler beim Laden der Daten')
@@ -307,6 +314,7 @@ function HomeContent() {
           const currentAddress = reverseData.display_name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
           
           setAddress(currentAddress)
+          setCoordinates({ lat: latitude, lng: longitude })
           
           // Calculate quality score
           await calculateQualityScore(latitude, longitude, currentAddress)
@@ -341,14 +349,43 @@ function HomeContent() {
     )
   }
 
-  useEffect(() => {
-    const ortParam = searchParams.get('ort')
-    if (ortParam && !address && !qualityScore) {
-      const decodedAddress = decodeURIComponent(ortParam)
-      setAddress(decodedAddress)
-      handleAddressSearch(decodedAddress, setLoading, setError, calculateQualityScore)
+  async function getAddressFromCoordinates(lat: number, lng: number): Promise<string> {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
+        headers: {
+          'User-Agent': 'LebensqualitaetsKarte/1.0',
+        },
+      })
+      const data = await response.json()
+      if (data.display_name) {
+        setAddress(data.display_name)
+      }
+      return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Adresse:', error)
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`
     }
-  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+  }
+
+  useEffect(() => {
+      const fetchData = async () => {
+        const latParam = searchParams.get('lat')
+        const lngParam = searchParams.get('lng')
+        if (latParam && lngParam && !coordinates) {
+          const lat = parseFloat(latParam)
+          const lng = parseFloat(lngParam)
+          if (!isNaN(lat) && !isNaN(lng)) {
+            // Fetch address from coordinates
+            const addressFromCords = await getAddressFromCoordinates(lat, lng)
+            setCoordinates({ lat, lng })
+            handleAddressSearch(addressFromCords, { lat, lng }, setLoading, setError, calculateQualityScore)
+          } else {
+            setError('Ungültige Koordinaten in der URL')
+          }
+        }
+      }
+      fetchData()
+    }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
 
 
@@ -424,7 +461,7 @@ function HomeContent() {
     }
   }
 
-  // Helper-Funktionen
+  // Helper function to recalculate score locally
   const toggleGroup = (groupKey: string) => {
     setExpandedGroups(prev => ({
       ...prev,
