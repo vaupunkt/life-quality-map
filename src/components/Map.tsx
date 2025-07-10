@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { categoryVisibility } from '@/app/helper/helperFunctions'
 
 // Fix for default markers in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -62,7 +63,6 @@ interface MapProps {
     driving: number
     activeRadius: 'walking' | 'cycling' | 'driving'
   }
-  categoryVisibility?: {[key: string]: boolean}
 }
 
 export default function Map({ 
@@ -73,8 +73,7 @@ export default function Map({
     cycling: 1200,
     driving: 2500,
     activeRadius: 'walking'
-  },
-  categoryVisibility = {}
+  }
 }: MapProps) {
   const mapRef = useRef<L.Map | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -274,7 +273,8 @@ export default function Map({
         label: string
       ) => {
         // Check if category is visible (default to true if not specified)
-        if (categoryVisibility[categoryKey] === false) return
+        const visibilityMap = categoryVisibility({})
+        if (visibilityMap[categoryKey] === false) return
         
         amenities?.forEach(amenity => {
           allMarkers.push({
