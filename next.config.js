@@ -7,6 +7,9 @@ const nextConfig = {
     };
     return config;
   },
+  allowedDevOrigins: ['localhost', '192.168.0.29'],
+
+
 };
 
 module.exports = nextConfig;
