@@ -4,13 +4,14 @@ const handleAddressSearch = async (searchAddress: string,
     coordinates: { lat: number; lng: number } | null,
     setLoading: (loading: boolean) => void, 
     setError: (error: string) => void,
+    setCurrentUrl: (url: string) => void,
     calculateQualityScore: (lat: number, lng: number, addressName: string) => Promise<void>) => {
     if (!searchAddress.trim()) return
     if (!coordinates) {
       setError('Coordinates are required')
       return
     }
-    updateURL(searchAddress, coordinates)
+    updateURL(searchAddress, coordinates, setCurrentUrl)
     
     setLoading(true)
     setError('')

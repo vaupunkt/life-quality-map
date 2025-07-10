@@ -375,7 +375,7 @@ function HomeContent() {
             // Fetch address from coordinates
             const addressFromCords = await getAddressFromCoordinates(lat, lng)
             setCoordinates({ lat, lng })
-            handleAddressSearch(addressFromCords, { lat, lng }, setLoading, setError, calculateQualityScore)
+            handleAddressSearch(addressFromCords, { lat, lng }, setLoading, setError, setCurrentUrl, calculateQualityScore)
           } else {
             setError('Ungültige Koordinaten in der URL')
           }
