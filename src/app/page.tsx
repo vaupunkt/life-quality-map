@@ -411,21 +411,24 @@ function HomeContent() {
           console.log('Web Share API fehlgeschlagen:', shareError)
         }
       }
-      else if (navigator.clipboard) {
-        navigator.share({
-          title: shareData.title,
-          text: shareData.text,
-          url: shareData.url,
-        }).then(() => {
-          console.log('Ergebnisse erfolgreich geteilt!')
-        }).catch((error) => {
-          console.error('Fehler beim Teilen:', error)
-          alert('Fehler beim Teilen der Ergebnisse')
-        })
-        
-        await navigator.clipboard.writeText(currentUrl)
-      } else {
-      }
+      else  {
+        try {
+          await navigator.clipboard.writeText(currentUrl)
+          const originalTitle = document.title
+          document.title = '✓ URL kopiert!'
+          setTimeout(() => {
+            document.title = originalTitle
+          }, 1000)
+        } catch (error) {
+          console.error('Fehler beim Kopieren der URL:', error)
+          const textArea = document.createElement('textarea')
+          textArea.value = currentUrl
+          document.body.appendChild(textArea)
+          textArea.select()
+          document.execCommand('copy')
+          document.body.removeChild(textArea)
+        }
+      } 
     } catch (error) {
       console.error('Fehler beim Teilen:', error)
       alert('Fehler beim Teilen der Ergebnisse')
@@ -1036,10 +1039,8 @@ function HomeContent() {
                     )}
                     
                     {/* Share & Copy Buttons */}
-                    
-                      
-                    
-                       {navigator.canShare() ? <button
+                    <div className="mt-6 flex flex-row gap-2 justify-center">
+                      <button
                           onClick={handleShare}
                           className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
                             darkMode 
@@ -1048,23 +1049,11 @@ function HomeContent() {
                           }`}
                           title="Teile deine Lebensqualitäts-Analyse mit anderen Apps"
                         >
-                          <span className="text-xl">📱</span>
+                          <span className="text-xl">🔖</span>
                           <span>Teilen</span>
-                        </button> : <div className="mt-6 flex flex-row gap-2 justify-center">
-                      <button
-                        onClick={handleCopyURL}
-                        className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
-                          darkMode 
-                            ? 'bg-gradient-to-r from-slate-600 to-gray-600 hover:from-slate-700 hover:to-gray-700 text-white border border-slate-500' 
-                            : 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 border border-gray-300'
-                        }`}
-                        title="Kopiere die URL dieser Analyse in die Zwischenablage zum einfachen Teilen"
-                      >
-                        <span className="text-xl">🔗</span>
-                        <span>URL kopieren</span>
-                      </button>
+                        </button> : 
                     </div>
-                      }                                           
+                                                           
                   </div>
                 </div>
 
