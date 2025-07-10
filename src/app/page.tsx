@@ -46,7 +46,7 @@ function HomeContent() {
   const [showSettings, setShowSettings] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
-  const fullPageLoading = loading || mapLoading || recalculatingScore || qualityScore === null || coordinates === null;
+  const fullPageLoading = loading || mapLoading || recalculatingScore || (qualityScore === null && coordinates !== null);
 
   // Mobile Detection
   const [isMobile, setIsMobile] = useState(false)
@@ -157,6 +157,13 @@ function HomeContent() {
   const topPlaces = useTopPlaces(topPlacesRefreshKey)
   const [showTopList, setShowTopList] = useState(false)
 
+  // SSR-safe current URL
+  const [currentUrl, setCurrentUrl] = useState('')
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCurrentUrl(window.location.href)
+    }
+  }, [])
 
 
   // Update quality score when radius changes
@@ -380,7 +387,7 @@ function HomeContent() {
 
 
   const handleShare = async () => {
-    if (!qualityScore) return
+    if (!qualityScore) return // Fix: do not proceed if null
     
     try {
       const imageDataUrl = await generateShareImage(darkMode, qualityScore)
@@ -393,7 +400,7 @@ function HomeContent() {
       const shareData = {
         title: `Lebensqualität in ${qualityScore.address}`,
         text: `🍀 Lebensqualitäts-Analyse für ${qualityScore.address}\n\n📊 Gesamtbewertung: ${qualityScore.overall}/10\n\nEntdecke die Lebensqualität in deiner Stadt!`,
-        url: window.location.href,
+        url: currentUrl,
         files: [new File([blob], `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`, { type: 'image/png' })]
       }
       
@@ -417,13 +424,12 @@ function HomeContent() {
         }
       }
       else if (navigator.clipboard) {
-      
         const link = document.createElement('a')
         link.download = `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`
         link.href = imageDataUrl
         link.click()
         
-        await navigator.clipboard.writeText(window.location.href)
+        await navigator.clipboard.writeText(currentUrl)
       } else {
       }
     } catch (error) {
@@ -434,7 +440,7 @@ function HomeContent() {
 
   const handleCopyURL = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href)
+      await navigator.clipboard.writeText(currentUrl)
       const originalTitle = document.title
       document.title = '✓ URL kopiert!'
       setTimeout(() => {
@@ -443,7 +449,7 @@ function HomeContent() {
     } catch (error) {
       console.error('Fehler beim Kopieren der URL:', error)
       const textArea = document.createElement('textarea')
-      textArea.value = window.location.href
+      textArea.value = currentUrl
       document.body.appendChild(textArea)
       textArea.select()
       document.execCommand('copy')
@@ -467,7 +473,7 @@ function HomeContent() {
   }
 
   const getGroupScore = (groupKey: string): number => {
-    if (!qualityScore) return 0
+    if (!qualityScore) return 0 // Fix: return 0 if null
     
     const group = categoryGroups[groupKey]
     if (!group || !group.enabled) return 0
@@ -1446,7 +1452,7 @@ function HomeContent() {
                         <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
                         <span><strong>Colored markers:</strong> Only show the facilities detected by our API within the selected radius ({radiusSettings.activeRadius === 'walking' ? `${radiusSettings.walking}m` : radiusSettings.activeRadius === 'cycling' ? `${radiusSettings.cycling/1000}km` : `${radiusSettings.driving/1000}km`})</span>
                       </div>
-                      {getTotalVisibleMarkers(qualityScore, categoryGroups) > 80 && (
+                      {qualityScore && getTotalVisibleMarkers(qualityScore, categoryGroups) > 80 && (
                         <div className="flex items-start gap-2">
                           <span className={`mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>•</span>
                           <span><strong>Performance mode:</strong> {getTotalVisibleMarkers(qualityScore, categoryGroups)} markers found - displayed in pages (max. 80 per page) for better performance</span>
@@ -1514,7 +1520,7 @@ function HomeContent() {
         <p>
           Made with ❤️ in{' '}
           <a
-            href={`${window.location.origin}/?lat=54.095791&lng=13.3815238`}
+            href={`${currentUrl}/?lat=54.095791&lng=13.3815238`}
             target="_blank"
             rel="noopener noreferrer"
           >
