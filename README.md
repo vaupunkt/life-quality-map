@@ -1,34 +1,34 @@
-# Lebensqualitäts-Karte
+# Quality of Life Map
 
-Eine interaktive Next.js-Anwendung zur Bewertung der Lebensqualität basierend auf Adressen.
+An interactive Next.js application for evaluating quality of life based on addresses.
 
-## Funktionen
+## Features
 
-- **Adresseingabe**: Geben Sie eine beliebige Adresse ein
-- **Interaktive Karte**: Visualisierung mit OpenStreetMap und Leaflet
-- **Lebensqualitäts-Score**: Bewertung basierend auf:
-  - Kindergärten in der Nähe
-  - Schulen in der Nähe
-  - Supermärkte in der Nähe
-  - Ärzte und Apotheken in der Nähe
-  - Lärmbelastung (simuliert)
-  - Verkehrsbelastung (simuliert)
-- **Gewichtungspresets**: Vordefinierte Gewichtungen für verschiedene Lebenssituationen
-- **Umwelt- und Klimadaten**: Integration von Klimadaten zur Bewertung der Umgebung
-- **Kategoriegruppen**: Gruppierung von Kategorien für eine bessere Übersicht
-- **Darkmode**: Unterstützung für dunkle und helle Designs
-- **Teilen/Copy-URL**: Möglichkeit, Ergebnisse zu teilen oder die URL zu kopieren
-- **Settings-Modal**: Anpassung der Gewichtungen und Einstellungen
+- **Address Input**: Enter any address
+- **Interactive Map**: Visualization with OpenStreetMap and Leaflet
+- **Quality of Life Score**: Evaluation based on:
+  - Nearby kindergartens
+  - Nearby schools
+  - Nearby supermarkets
+  - Nearby doctors and pharmacies
+  - Noise pollution (simulated)
+  - Traffic congestion (simulated)
+- **Weighting Presets**: Predefined weightings for different life situations
+- **Environmental and Climate Data**: Integration of climate data for area evaluation
+- **Category Groups**: Grouping of categories for better overview
+- **Dark Mode**: Support for dark and light themes
+- **Share/Copy URL**: Option to share results or copy the URL
+- **Settings Modal**: Adjust weightings and settings
 
-## Technologien
+## Technologies
 
-- **Next.js 15** mit App Router
-- **TypeScript** für Typsicherheit
-- **Tailwind CSS** für modernes Styling
-- **Leaflet** für interaktive Karten
-- **OpenStreetMap** für Kartendaten
-- **Overpass API** für Daten über nahegelegene Einrichtungen
-- **Nominatim API** für Geocoding
+- **Next.js 15** with App Router
+- **TypeScript** for type safety
+- **Tailwind CSS** for modern styling
+- **Leaflet** for interactive maps
+- **OpenStreetMap** for map data
+- **Overpass API** for nearby facility data
+- **Nominatim API** for geocoding
 
 ## Installation
 
@@ -36,32 +36,32 @@ Eine interaktive Next.js-Anwendung zur Bewertung der Lebensqualität basierend a
 npm install
 ```
 
-## Entwicklung
+## Development
 
 ```bash
 npm run dev
 ```
 
-Öffnen Sie [http://localhost:3000](http://localhost:3000) in Ihrem Browser.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Verwendung
+## Usage
 
-1. Geben Sie eine Adresse in das Eingabefeld ein
-2. Klicken Sie auf "Bewerten"
-3. Die Anwendung zeigt:
-   - Einen Gesamtscore für die Lebensqualität
-   - Einzelbewertungen für verschiedene Kategorien
-   - Die Position auf der interaktiven Karte
-4. Nutzen Sie die Gewichtungspresets oder passen Sie die Gewichtungen manuell an
-5. Erkunden Sie die Umwelt- und Klimadaten für die ausgewählte Adresse
-6. Teilen Sie die Ergebnisse oder kopieren Sie die URL für späteren Zugriff
+1. Enter an address in the input field
+2. Click "Evaluate"
+3. The application displays:
+   - An overall quality of life score
+   - Individual ratings for various categories
+   - The location on the interactive map
+4. Use the weighting presets or manually adjust the weightings
+5. Explore environmental and climate data for the selected address
+6. Share the results or copy the URL for later access
 
-## API-Endpoints
+## API Endpoints
 
-- `GET /api/geocode?address=<adresse>` - Konvertiert Adressen in Koordinaten
-- `POST /api/quality-score` - Berechnet Lebensqualitäts-Scores
+- `GET /api/geocode/reverse?lat=${lat}&lon=${lng}&format=json` - Converts coordinates to an address
+- `POST /api/quality-score` - Calculates quality of life scores
 
-## Projekt-Struktur
+## Project Structure
 
 ```
 src/
@@ -76,6 +76,6 @@ src/
     └── Map.tsx
 ```
 
-## Lizenz
+## License
 
 MIT

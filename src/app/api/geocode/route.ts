@@ -4,13 +4,37 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const lat = searchParams.get('lat');
   const lng = searchParams.get('lng');
+  const address = searchParams.get('address');
 
-  if (!lat || !lng) {
-    return NextResponse.json({ error: 'Latitude and longitude are required' }, { status: 400 });
+  if (address && !lat && !lng) {
+    // If only address is provided, we can still proceed with geocoding
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${address}`,
+        {
+          headers: {
+            'User-Agent': 'LebensqualitaetsKarte/1.0',
+          },
+        }
+      );
+      const data = await response.json();
+    if (!data || Object.keys(data).length === 0 || data.error) {
+      return NextResponse.json({ error: 'Address not found' }, { status: 404 });
+    }
+
+    const result = {
+      lat: parseFloat(data[0].lat),
+      lng: parseFloat(data[0].lon),
+      display_name: data[0].display_name,
+      name: data[0].name || data[0].display_name
+    } as GeocodeResponse;
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    return NextResponse.json({ error: 'Error during geocoding' }, { status: 500 });
   }
-
-  console.log('Received coordinates:', { lat, lng });
-
+} else if (!address && lat && lng) {
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
@@ -48,6 +72,9 @@ export async function GET(request: NextRequest) {
     console.error('Geocoding error:', error);
     return NextResponse.json({ error: 'Error during geocoding' }, { status: 500 });
   }
+} else {
+  return NextResponse.json({ error: 'Invalid request parameters' }, { status: 400 });
+}
 }
 
 
@@ -55,7 +82,7 @@ export interface GeocodeResponse {
   lat: number;
   lng: number;
   display_name: string;
-  address: {
+  address?: {
     city?: string;
     road?: string;
     house_number?: string;

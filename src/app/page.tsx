@@ -255,33 +255,30 @@ function HomeContent() {
     }
   }, [radiusSettings, categoryGroups, categoryVisibility]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleAddressSubmit = async (e: React.FormEvent) => {
+  const handleAddressSubmit = async (e:  React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!address.trim()) return
-    if (!coordinates) {
-      setError('Bitte wählen Sie einen Ort auf der Karte oder geben Sie eine Adresse ein.')
-      return
-    }
+    const form = e.currentTarget;
+    const addressInput = form.elements.namedItem('address') as HTMLInputElement;
+    const address = addressInput.value.trim();
+    if (!address) return
 
     setLoading(true)
     setError('')
 
     try {
       // Geocoding API call
-      const response = await fetch(`/api/geocode?lat=${coordinates.lat}&lng=${coordinates.lng}`)
+      const response = await fetch(`/api/geocode?address=${encodeURIComponent(address)}`)
       const data = await response.json()
 
       if (data.error) {
         setError(data.error)
         return
       }
-
       // Calculate quality score
       await calculateQualityScore(data.lat, data.lng, address)
       
       // Update URL after successful address input
       updateURL(address, { lat: data.lat, lng: data.lng })
-      console.log('URL updated after address submission:', address)
     } catch (err) {
       setError('Fehler beim Laden der Daten')
     } finally {
@@ -884,6 +881,7 @@ function HomeContent() {
                 <div className="relative w-full">
                   <input
                     type="text"
+                    name="address"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="z.B. Alexanderplatz, Berlin oder klicke auf die Karte"
