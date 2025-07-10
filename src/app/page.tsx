@@ -153,9 +153,9 @@ function HomeContent() {
   })
 
   // Top 10 Places
-  const [topPlacesRefreshKey, setTopPlacesRefreshKey] = useState(0)
-  const topPlaces = useTopPlaces(topPlacesRefreshKey)
-  const [showTopList, setShowTopList] = useState(false)
+  // const [topPlacesRefreshKey, setTopPlacesRefreshKey] = useState(0)
+  // const topPlaces = useTopPlaces(topPlacesRefreshKey)
+  // const [showTopList, setShowTopList] = useState(false)
 
   // SSR-safe current URL
   const [currentUrl, setCurrentUrl] = useState('')
@@ -248,7 +248,7 @@ function HomeContent() {
         console.log('URL updated after quality score calculation:', addressName)
       }
       // Top10-Liste nach erfolgreichem Score-API-Call aktualisieren
-      setTopPlacesRefreshKey(k => k + 1)
+      // setTopPlacesRefreshKey(k => k + 1)
     } finally {
       setMapLoading(false)
       setRecalculatingScore(false)
@@ -567,7 +567,7 @@ function HomeContent() {
         : 'bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50'
     }`}>
       {/* Top 10 Liste */}
-      <div className="container mx-auto max-w-2xl p-6">
+      {/* <div className="container mx-auto max-w-2xl p-6">
         <button
           className={`w-full flex items-center justify-between px-6 py-4 rounded-xl border shadow-lg font-bold text-lg transition-all duration-200 ${
             darkMode ? 'bg-slate-800 border-slate-600 text-emerald-300' : 'bg-white border-emerald-200 text-emerald-700'
@@ -598,7 +598,7 @@ function HomeContent() {
             </ol>
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* Full-page loading overlay */}
       {fullPageLoading && (
