@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as fs from 'fs'
 import * as path from 'path'
 
-// Helpfunction to calculate distance between two coordinates using Haversine formula
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371e3 // Earth radius in meters
   const φ1 = lat1 * Math.PI / 180
@@ -293,7 +292,6 @@ async function calculateQualityScore(
 
     const data = await response.json()
     
-    // Verarbeite die Ergebnisse
     data.elements?.forEach((element: any) => {
       const elementLat = element.lat || (element.center ? element.center.lat : null)
       const elementLng = element.lon || (element.center ? element.center.lon : null)
@@ -470,13 +468,12 @@ async function calculateQualityScore(
     const educationScore = Math.min(10, Math.round(amenityCounts.education * 1.5))
     const hairdresserScore = Math.min(10, Math.round(amenityCounts.hairdresser * 2))
 
-    // Klimadaten-basierte Umweltbewertung
+    
     const klimaScores = calculateClimaScore(bundeslandInfo.klimadaten)
     const { temperaturScore, niederschlagScore, sonnenscheinScore, klimaScore } = klimaScores
 
-    // Mock scores for noise and traffic (replaced by climate data when environment toggle is on)
-    const noiseScore = Math.floor(Math.random() * 5) + 3 // 3-7 range
-    const trafficScore = Math.floor(Math.random() * 5) + 3 // 3-7 range
+    const noiseScore = Math.floor(Math.random() * 5) + 3 
+    const trafficScore = Math.floor(Math.random() * 5) + 3 
 
     let overallScore = 0
     let totalWeight = 0
@@ -523,7 +520,7 @@ async function calculateQualityScore(
       overallScore += (10 - trafficScore) * 0.03 * totalWeight
       
       if (bundeslandInfo.lebenszufriedenheit) {
-        const lifeSatisfactionScore = Math.round((bundeslandInfo.lebenszufriedenheit / 10) * 10) // Normalisieren auf 0-10 Skala
+        const lifeSatisfactionScore = Math.round((bundeslandInfo.lebenszufriedenheit / 10) * 10) 
         overallScore += lifeSatisfactionScore * 0.1 * totalWeight
         totalWeight += 0.1 * totalWeight
       }
@@ -553,7 +550,7 @@ async function calculateQualityScore(
          (10 - trafficScore) * 0.02)
       
       if (bundeslandInfo.lebenszufriedenheit) {
-        const lifeSatisfactionScore = Math.round((bundeslandInfo.lebenszufriedenheit / 10) * 10) // Normalisieren auf 0-10 Skala
+        const lifeSatisfactionScore = Math.round((bundeslandInfo.lebenszufriedenheit / 10) * 10) 
         baseScore = baseScore * 0.9 + lifeSatisfactionScore * 0.1
       }
       
