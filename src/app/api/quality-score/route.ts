@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as fs from 'fs'
 import * as path from 'path'
 
-// Hilfsfunktion zur Berechnung der Entfernung zwischen zwei Punkten in Metern
+// Helpfunction to calculate distance between two coordinates using Haversine formula
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371e3 // Erdradius in Metern
+  const R = 6371e3 // Earth radius in meters
   const φ1 = lat1 * Math.PI / 180
   const φ2 = lat2 * Math.PI / 180
   const Δφ = (lat2 - lat1) * Math.PI / 180
@@ -18,32 +18,30 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * c
 }
 
-// Hilfsfunktion zur Normalisierung von Namen für Duplikat-Erkennung
+// Helpfunction to normalize names for duplicate detection
 function normalizeName(name: string): string {
   return name.toLowerCase()
     .replace(/[äöüß]/g, (char) => {
       const map: {[key: string]: string} = { 'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'ß': 'ss' }
       return map[char] || char
     })
-    .replace(/[^\w\s]/g, '') // Entferne Sonderzeichen
-    .replace(/\s+/g, ' ')   // Mehrere Leerzeichen zu einem
+    .replace(/[^\w\s]/g, '') 
+    .replace(/\s+/g, ' ') 
     .trim()
 }
 
-// Hilfsfunktion zur Duplikat-Filterung
+// Helpfunction to filter duplicates
 function removeDuplicates<T extends {lat: number, lng: number, name: string}>(items: T[]): T[] {
   const filtered: T[] = []
-  const duplicateThreshold = 50 // 50 Meter Mindestabstand
+  const duplicateThreshold = 50 
   
   for (const item of items) {
     const normalizedName = normalizeName(item.name)
     
-    // Prüfe ob bereits ein ähnliches Element existiert
     const isDuplicate = filtered.some(existing => {
       const existingNormalizedName = normalizeName(existing.name)
       const distance = calculateDistance(item.lat, item.lng, existing.lat, existing.lng)
       
-      // Duplikat wenn: gleicher Name ODER sehr nah beieinander (< 50m) mit ähnlichem Namen
       const sameOrSimilarName = existingNormalizedName === normalizedName || 
                                (distance < duplicateThreshold && 
                                 (existingNormalizedName.includes(normalizedName) || 
@@ -60,14 +58,12 @@ function removeDuplicates<T extends {lat: number, lng: number, name: string}>(it
   return filtered
 }
 
-// Funktion zum Ermitteln des Bundeslandes basierend auf Koordinaten
 async function getBundeslandFromCoordinates(lat: number, lng: number): Promise<{
   bundesland: string | null, 
   lebenszufriedenheit: number | null,
   klimadaten: {temperatur: number, niederschlag: number, sonnenschein: number} | null
 }> {
   try {
-    // Reverse Geocoding mit Nominatim API
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=5&addressdetails=1`
     const response = await fetch(url, {
       headers: {
@@ -86,20 +82,16 @@ async function getBundeslandFromCoordinates(lat: number, lng: number): Promise<{
       return { bundesland: null, lebenszufriedenheit: null, klimadaten: null }
     }
     
-    // Lebenszufriedenheitsdaten laden
     const dataPath = path.join(process.cwd(), 'src/data/lebenszufriedenheit.json')
     const lebenszufriedenheitData = JSON.parse(fs.readFileSync(dataPath, 'utf8'))
     
-    // Klimadaten laden
     const klimaPath = path.join(process.cwd(), 'src/data/klimadaten.json')
     const klimaData = JSON.parse(fs.readFileSync(klimaPath, 'utf8'))
     
-    // Bundesland Namen normalisieren und matchen
     const normalizedState = state.trim()
     let lebenszufriedenheit = lebenszufriedenheitData[normalizedState] || null
     let klimadaten = klimaData[normalizedState] || null
     
-    // Fallback für alternative Schreibweisen
     if (!lebenszufriedenheit || !klimadaten) {
       const alternatives: {[key: string]: string} = {
         'North Rhine-Westphalia': 'Nordrhein-Westfalen',
@@ -156,9 +148,7 @@ async function calculateQualityScore(
   categoryGroups?: any,
   categoryVisibility?: any
 ) {
-  // Bundesland und Lebenszufriedenheit ermitteln
   const bundeslandInfo = await getBundeslandFromCoordinates(lat, lng)
-  // Definiere die Suchkategorien mit ihren OpenStreetMap-Tags
   const searchCategories = {
     kindergarten: ['kindergarten'],
     schools: ['school'],
@@ -179,7 +169,6 @@ async function calculateQualityScore(
     hairdresser: ['hairdresser', 'beauty']
   }
 
-  // Initialisiere die Ergebnisse
   const amenityCounts = {
     kindergarten: 0,
     school: 0,
@@ -222,7 +211,6 @@ async function calculateQualityScore(
   }
 
   try {
-    // Erweiterte Overpass-Abfrage mit verbesserter Syntax
     const overpassQuery = `
       [out:json][timeout:30];
       (
@@ -313,13 +301,11 @@ async function calculateQualityScore(
       
       if (!elementLat || !elementLng) return
 
-      // Überprüfe Entfernung zum Suchpunkt
       const distance = calculateDistance(lat, lng, elementLat, elementLng)
       if (distance > radius) return
 
       const tags = element.tags || {}
 
-      // Kategorisierung basierend auf Tags
       if (tags.amenity === 'kindergarten') {
         amenityCounts.kindergarten++
         amenityDetails.kindergartens.push({ lat: elementLat, lng: elementLng, name })
@@ -430,7 +416,6 @@ async function calculateQualityScore(
       }
     })
 
-    // Duplikat-Filterung anwenden
     amenityDetails.kindergartens = removeDuplicates(amenityDetails.kindergartens)
     amenityDetails.schools = removeDuplicates(amenityDetails.schools)
     amenityDetails.supermarkets = removeDuplicates(amenityDetails.supermarkets)
@@ -449,7 +434,6 @@ async function calculateQualityScore(
     amenityDetails.education = removeDuplicates(amenityDetails.education)
     amenityDetails.hairdresser = removeDuplicates(amenityDetails.hairdresser)
 
-    // Aktualisiere die Zähler basierend auf den gefilterten Daten
     amenityCounts.kindergarten = amenityDetails.kindergartens.length
     amenityCounts.school = amenityDetails.schools.length
     amenityCounts.supermarket = amenityDetails.supermarkets.length
@@ -468,7 +452,6 @@ async function calculateQualityScore(
     amenityCounts.education = amenityDetails.education.length
     amenityCounts.hairdresser = amenityDetails.hairdresser.length
 
-    // Calculate scores (0-10 scale)
     const kindergartenScore = Math.min(10, Math.round(amenityCounts.kindergarten * 2))
     const schoolScore = Math.min(10, Math.round(amenityCounts.school * 2))
     const supermarketScore = Math.min(10, Math.round(amenityCounts.supermarket * 1.5))
@@ -495,12 +478,10 @@ async function calculateQualityScore(
     const noiseScore = Math.floor(Math.random() * 5) + 3 // 3-7 range
     const trafficScore = Math.floor(Math.random() * 5) + 3 // 3-7 range
 
-    // Calculate overall score (weighted average based on enabled categories and their weights)
     let overallScore = 0
     let totalWeight = 0
     
     if (categoryGroups && categoryVisibility) {
-      // Dynamische Berechnung basierend auf aktivierten Kategorien und Gewichtungen
       Object.values(categoryGroups).forEach((group: any) => {
         if (!group.enabled) return
         
@@ -538,11 +519,9 @@ async function calculateQualityScore(
         })
       })
       
-      // Lärm- und Verkehrsbelastung immer berücksichtigen (negative Faktoren)
       overallScore += (10 - noiseScore) * 0.03 * totalWeight
       overallScore += (10 - trafficScore) * 0.03 * totalWeight
       
-      // Lebenszufriedenheit des Bundeslandes einbeziehen (10% Gewichtung)
       if (bundeslandInfo.lebenszufriedenheit) {
         const lifeSatisfactionScore = Math.round((bundeslandInfo.lebenszufriedenheit / 10) * 10) // Normalisieren auf 0-10 Skala
         overallScore += lifeSatisfactionScore * 0.1 * totalWeight
@@ -553,7 +532,6 @@ async function calculateQualityScore(
       
       overallScore = totalWeight > 0 ? Math.round(overallScore / totalWeight) : 0
     } else {
-      // Fallback: Original-Berechnung
       let baseScore = (kindergartenScore * 0.07 + 
          schoolScore * 0.07 + 
          supermarketScore * 0.07 + 
@@ -574,7 +552,6 @@ async function calculateQualityScore(
          (10 - noiseScore) * 0.02 + 
          (10 - trafficScore) * 0.02)
       
-      // Lebenszufriedenheit des Bundeslandes einbeziehen (10% Gewichtung)
       if (bundeslandInfo.lebenszufriedenheit) {
         const lifeSatisfactionScore = Math.round((bundeslandInfo.lebenszufriedenheit / 10) * 10) // Normalisieren auf 0-10 Skala
         baseScore = baseScore * 0.9 + lifeSatisfactionScore * 0.1
@@ -582,8 +559,6 @@ async function calculateQualityScore(
       
       overallScore = Math.round(baseScore)
     }
-
-    // Bundesland und Lebenszufriedenheit sind bereits in bundeslandInfo verfügbar
 
     return {
       overall: overallScore,
@@ -621,7 +596,6 @@ async function calculateQualityScore(
   } catch (error) {
     console.error('Overpass API error:', error)
     
-    // Fallback with mock data if API fails
     return {
       overall: 6,
       kindergarten: 5,
@@ -674,7 +648,6 @@ async function calculateQualityScore(
   }
 }
 
-// Funktion zur Berechnung des Klima-Scores basierend auf Klimadaten (strengere Bewertung)
 function calculateClimaScore(klimadaten: {temperatur: number, niederschlag: number, sonnenschein: number} | null): {
   temperaturScore: number,
   niederschlagScore: number,
@@ -685,75 +658,62 @@ function calculateClimaScore(klimadaten: {temperatur: number, niederschlag: numb
     return { temperaturScore: 5, niederschlagScore: 5, sonnenscheinScore: 5, klimaScore: 5 }
   }
 
-  // Temperatur-Score (strengere Bewertung: ideal 9-13°C, härtere Penalties für Extreme)
   let temperaturScore = 10
-  const idealTemp = 11 // Optimale Temperatur
+  const idealTemp = 11 
   const tempDiff = Math.abs(klimadaten.temperatur - idealTemp)
   
   if (klimadaten.temperatur < 7) {
-    // Sehr kalt: drastische Penalty
     temperaturScore = Math.max(0, 3 - (7 - klimadaten.temperatur) * 0.8)
   } else if (klimadaten.temperatur > 16) {
-    // Sehr warm: drastische Penalty
     temperaturScore = Math.max(0, 3 - (klimadaten.temperatur - 16) * 0.7)
   } else if (tempDiff <= 2) {
-    // Idealer Bereich (9-13°C): maximaler Score mit sanftem Abfall
     temperaturScore = 10 - tempDiff * 1.5
   } else {
-    // Außerhalb des idealen Bereichs: starker Abfall
     temperaturScore = Math.max(1, 7 - (tempDiff - 2) * 2.5)
   }
 
-  // Niederschlag-Score (strengere Bewertung: ideal 750-850mm, härtere Penalties)
   let niederschlagScore = 10
   const idealNiederschlag = 800
   const niederschlagDiff = Math.abs(klimadaten.niederschlag - idealNiederschlag)
   
   if (klimadaten.niederschlag < 500) {
-    // Sehr trocken: drastische Penalty
     niederschlagScore = Math.max(0, 2 - (500 - klimadaten.niederschlag) / 100)
   } else if (klimadaten.niederschlag > 1200) {
-    // Sehr nass: drastische Penalty
     niederschlagScore = Math.max(0, 2 - (klimadaten.niederschlag - 1200) / 150)
   } else if (niederschlagDiff <= 50) {
-    // Idealer Bereich (750-850mm): maximaler Score
     niederschlagScore = 10 - niederschlagDiff / 25
   } else if (niederschlagDiff <= 150) {
-    // Akzeptabler Bereich: moderater Abfall
+    
     niederschlagScore = Math.max(3, 8 - (niederschlagDiff - 50) / 20)
   } else {
-    // Außerhalb akzeptabler Bereich: starker Abfall
+    
     niederschlagScore = Math.max(1, 3 - (niederschlagDiff - 150) / 50)
   }
-
-  // Sonnenschein-Score (strengere Bewertung: optimal 1600-1800h, zu wenig oder zu viel ist problematisch)
+  
   let sonnenscheinScore = 10
   const idealSonnenschein = 1700
   const sonnenscheinDiff = Math.abs(klimadaten.sonnenschein - idealSonnenschein)
   
   if (klimadaten.sonnenschein < 1200) {
-    // Zu wenig Sonne: deutliche Penalty
+    
     sonnenscheinScore = Math.max(1, (klimadaten.sonnenschein / 1200) * 6)
   } else if (klimadaten.sonnenschein > 2200) {
-    // Zu viel Sonne (extreme Hitze): Penalty
+    
     sonnenscheinScore = Math.max(2, 8 - (klimadaten.sonnenschein - 2200) / 100)
   } else if (sonnenscheinDiff <= 100) {
-    // Idealer Bereich: maximaler Score
+    
     sonnenscheinScore = 10 - sonnenscheinDiff / 50
   } else {
-    // Außerhalb ideal: moderater Abfall
+    
     sonnenscheinScore = Math.max(3, 8 - (sonnenscheinDiff - 100) / 80)
   }
 
-  // Gesamt-Klima-Score (verschärfte Gewichtung und strengere Bewertung)
-  // Temperatur wird stärker gewichtet, da sie den größten Einfluss auf Lebensqualität hat
   const gewichteterScore = (temperaturScore * 0.45 + niederschlagScore * 0.35 + sonnenscheinScore * 0.2)
   
-  // Zusätzliche Penalty für Kombinationen extremer Werte
   let extremePenalty = 0
   if ((klimadaten.temperatur < 8 || klimadaten.temperatur > 15) && 
       (klimadaten.niederschlag < 600 || klimadaten.niederschlag > 1100)) {
-    extremePenalty = 1.5 // Penalty für Kombination aus extremer Temperatur und extremem Niederschlag
+    extremePenalty = 1.5 
   }
   
   const klimaScore = Math.round(Math.max(0, gewichteterScore - extremePenalty))

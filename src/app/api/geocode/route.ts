@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
   const address = searchParams.get('address');
 
   if (address && !lat && !lng) {
-    // If only address is provided, we can still proceed with geocoding
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${address}`,
@@ -62,6 +61,7 @@ export async function GET(request: NextRequest) {
         },
         name: data.name || data.display_name 
       } as GeocodeResponse; 
+       return NextResponse.json(result);
     } catch (error) {
       console.error('Geocoding error:', error);
       return NextResponse.json({ error: 'Error during geocoding' }, { status: 500 });
