@@ -38,7 +38,6 @@ export default function SettingsModal({
 
   if (!isOpen) return null
 
-  // Handler für Klick außerhalb des Modals
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose()
