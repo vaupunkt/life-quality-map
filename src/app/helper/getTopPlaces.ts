@@ -24,7 +24,7 @@ export function getTopPlaces(limit = 10): TopPlace[] {
 
   // Dopplungen vermeiden: Nur jeweils die beste Bewertung pro Stadt (city, town, village, fallback auf address-Parsing)
   const bestPerCity: {[city: string]: TopPlace} = {}
-  for (const row of rows) {
+  for (const row of rows as any[]) {
     let city = ''
     let bundesland = ''
     try {
