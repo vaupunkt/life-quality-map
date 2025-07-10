@@ -1051,7 +1051,7 @@ function HomeContent() {
                         >
                           <span className="text-xl">🔖</span>
                           <span>Teilen</span>
-                        </button> : 
+                        </button>
                     </div>
                                                            
                   </div>
