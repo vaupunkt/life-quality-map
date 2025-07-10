@@ -50,14 +50,14 @@ function HomeContent() {
   const fullPageLoading = loading || mapLoading || recalculatingScore || (qualityScore === null && coordinates !== null);
 
   // Mobile Detection
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMobile, setIsMobile] = useState(true)
   
-  useEffect(() => {
-    if (typeof window !== 'undefined' && navigator.share) {
-      console.log(navigator.share())
-      setIsMobile(navigator.canShare())
-    }
-  }, [])
+  // useEffect(() => {
+  //   if (typeof window !== 'undefined' && navigator.share) {
+  //     console.log(navigator.share())
+  //     setIsMobile(navigator.canShare())
+  //   }
+  // }, [])
 
 
   const [radiusSettings, setRadiusSettings] = useState<RadiusSettings>({
@@ -405,7 +405,7 @@ function HomeContent() {
         files: [new File([blob], `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`, { type: 'image/png' })]
       }
       
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      // const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
       
       if (isMobile) {
         try {
