@@ -49,17 +49,6 @@ function HomeContent() {
   const [darkMode, setDarkMode] = useState(false)
   const fullPageLoading = loading || mapLoading || recalculatingScore || (qualityScore === null && coordinates !== null);
 
-  // Mobile Detection
-  const [isMobile, setIsMobile] = useState(true)
-  
-  // useEffect(() => {
-  //   if (typeof window !== 'undefined' && navigator.share) {
-  //     console.log(navigator.share())
-  //     setIsMobile(navigator.canShare())
-  //   }
-  // }, [])
-
-
   const [radiusSettings, setRadiusSettings] = useState<RadiusSettings>({
     walking: 500,     // 500m walking distance
     cycling: 1500,    // 1.5km cycling distance
@@ -385,10 +374,10 @@ function HomeContent() {
       fetchData()
     }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
-
+    console.log(navigator.canShare())
 
   const handleShare = async () => {
-    if (!qualityScore) return // Fix: do not proceed if null
+    if (!qualityScore) return
     
     try {
       const imageDataUrl = await generateShareImage(darkMode, qualityScore)
@@ -400,14 +389,12 @@ function HomeContent() {
       
       const shareData = {
         title: `Lebensqualität in ${qualityScore.address}`,
-        text: `🍀 Lebensqualitäts-Analyse für ${qualityScore.address}\n\n📊 Gesamtbewertung: ${qualityScore.overall}/10\n\nEntdecke die Lebensqualität in deiner Stadt!`,
+        text: `🍀 Lebensqualitäts-Analyse für ${qualityScore.address}\n\n📊 Gesamtbewertung: ${qualityScore.overall}/10\n\nFinde heraus, wo die Lebenqualität am höchsten ist!`,
         url: currentUrl,
         files: [new File([blob], `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`, { type: 'image/png' })]
       }
       
-      // const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-      
-      if (isMobile) {
+      if (navigator.canShare()) {
         try {
             console.log('navigator.share() supported, attempting to share...')
             shareOnMobile({
@@ -429,7 +416,6 @@ function HomeContent() {
           title: shareData.title,
           text: shareData.text,
           url: shareData.url,
-          files: shareData.files
         }).then(() => {
           console.log('Ergebnisse erfolgreich geteilt!')
         }).catch((error) => {
@@ -1050,7 +1036,21 @@ function HomeContent() {
                     )}
                     
                     {/* Share & Copy Buttons */}
-                    <div className="mt-6 flex flex-row gap-2 justify-center">
+                    
+                      
+                    
+                       {navigator.canShare() ? <button
+                          onClick={handleShare}
+                          className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
+                            darkMode 
+                              ? 'bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white' 
+                              : 'bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white'
+                          }`}
+                          title="Teile deine Lebensqualitäts-Analyse mit anderen Apps"
+                        >
+                          <span className="text-xl">📱</span>
+                          <span>Teilen</span>
+                        </button> : <div className="mt-6 flex flex-row gap-2 justify-center">
                       <button
                         onClick={handleCopyURL}
                         className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
@@ -1063,23 +1063,8 @@ function HomeContent() {
                         <span className="text-xl">🔗</span>
                         <span>URL kopieren</span>
                       </button>
-                      
-                    
-                       {isMobile && currentUrl.includes("https") ? <button
-                          onClick={handleShare}
-                          className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
-                            darkMode 
-                              ? 'bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white' 
-                              : 'bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white'
-                          }`}
-                          title="Teile deine Lebensqualitäts-Analyse mit anderen Apps"
-                        >
-                          <span className="text-xl">{isMobile ? '📱' : '🖼️'}</span>
-                          <span>{isMobile ? 'Teilen' : 'Als Bild teilen'}</span>
-                        </button> : null}
-               
-                                            
                     </div>
+                      }                                           
                   </div>
                 </div>
 
