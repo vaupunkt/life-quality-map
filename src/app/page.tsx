@@ -374,7 +374,6 @@ function HomeContent() {
       fetchData()
     }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    console.log(navigator.canShare())
 
   const handleShare = async () => {
     if (!qualityScore) return
@@ -393,66 +392,38 @@ function HomeContent() {
         url: currentUrl,
         files: [new File([blob], `lebensqualitaet-${qualityScore.address.replace(/[^a-zA-Z0-9]/g, '-')}.png`, { type: 'image/png' })]
       }
-      
-      if (navigator.canShare()) {
-        try {
-            console.log('navigator.share() supported, attempting to share...')
-            shareOnMobile({
-              images: [imageDataUrl],
+
+      try {
+          shareOnMobile({
+            images: [imageDataUrl],
               title: shareData.title,
               text: shareData.text,
               url: shareData.url,
             })
             
-         
-            return
-          }
-         catch (shareError) {
-          console.log('Web Share API fehlgeschlagen:', shareError)
-        }
-      }
-      else  {
-        try {
-          await navigator.clipboard.writeText(currentUrl)
-          const originalTitle = document.title
-          document.title = '✓ URL kopiert!'
-          setTimeout(() => {
+          } catch (error) {
+            try {
+              await navigator.clipboard.writeText(currentUrl)
+              const originalTitle = document.title
+              document.title = '✓ URL kopiert!'
+              setTimeout(() => {
             document.title = originalTitle
           }, 1000)
-        } catch (error) {
-          console.error('Fehler beim Kopieren der URL:', error)
-          const textArea = document.createElement('textarea')
-          textArea.value = currentUrl
-          document.body.appendChild(textArea)
-          textArea.select()
-          document.execCommand('copy')
-          document.body.removeChild(textArea)
+            } catch (error) {
+              console.error('Fehler beim Kopieren der URL:', error)
+              const textArea = document.createElement('textarea')
+              textArea.value = currentUrl
+              document.body.appendChild(textArea)
+              textArea.select()
+              document.execCommand('copy')
+              document.body.removeChild(textArea)
+            }
         }
-      } 
     } catch (error) {
       console.error('Fehler beim Teilen:', error)
       alert('Fehler beim Teilen der Ergebnisse')
     }
-  }
-
-  const handleCopyURL = async () => {
-    try {
-      await navigator.clipboard.writeText(currentUrl)
-      const originalTitle = document.title
-      document.title = '✓ URL kopiert!'
-      setTimeout(() => {
-        document.title = originalTitle
-      }, 1000)
-    } catch (error) {
-      console.error('Fehler beim Kopieren der URL:', error)
-      const textArea = document.createElement('textarea')
-      textArea.value = currentUrl
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textArea)
-    }
-  }
+  } 
 
   // Helper function to recalculate score locally
   const toggleGroup = (groupKey: string) => {
