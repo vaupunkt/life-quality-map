@@ -33,15 +33,29 @@ export function getTopPlaces(limit = 10): TopPlace[] {
       city = props?.address?.city || props?.address?.town || props?.address?.village
       bundesland = props?.address?.state || ''
       if (!city && typeof props.address === 'string') {
-        // Fallback: Stadtname aus address-String extrahieren (z.B. "..., München, Bayern, ...")
+        // Fallback: Stadtname aus address-String extrahieren (z.B. "..., Greifswald, Landkreis Vorpommern-Greifswald, Mecklenburg-Vorpommern, ...")
         const parts = props.address.split(',').map((s: string) => s.trim())
-        // Suche nach erstem Teil, der wie eine Stadt aussieht (z.B. vor Bundesland)
         const bundeslandList = ['Bayern','Nordrhein-Westfalen','Baden-Württemberg','Berlin','Brandenburg','Bremen','Hamburg','Hessen','Mecklenburg-Vorpommern','Niedersachsen','Rheinland-Pfalz','Saarland','Sachsen','Sachsen-Anhalt','Schleswig-Holstein','Thüringen']
+        const landkreisPattern = /^Landkreis /i
         for (let i = 0; i < parts.length; i++) {
           if (bundeslandList.includes(parts[i])) {
-            if (i > 0) city = parts[i-1]
+            if (i > 1 && landkreisPattern.test(parts[i-1])) {
+              // Wenn vor dem Landkreis noch ein Teil steht, nimm diesen (z.B. Greifswald)
+              city = parts[i-2]
+            } else if (i > 0) {
+              city = parts[i-1]
+            }
             bundesland = parts[i]
             break
+          }
+        }
+        // Wenn city immer noch leer ist, nimm das erste Element, das nicht Landkreis oder Bundesland ist
+        if (!city) {
+          for (const part of parts) {
+            if (!bundeslandList.includes(part) && !landkreisPattern.test(part)) {
+              city = part
+              break
+            }
           }
         }
       }
