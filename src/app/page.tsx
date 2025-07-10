@@ -1065,7 +1065,7 @@ function HomeContent() {
                       </button>
                       
                     
-                       {isMobile && currentUrl.contains("https") ? <button
+                       {isMobile && currentUrl.includes("https") ? <button
                           onClick={handleShare}
                           className={`px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center gap-3 hover:shadow-lg transform hover:scale-105 ${
                             darkMode 
