@@ -142,23 +142,23 @@ export async function POST(request: NextRequest) {
     // Calculate quality score based on nearby amenities
     const qualityScore = await calculateQualityScore(lat, lng, address, radius, categoryGroups, categoryVisibility)
 
-    // Score und Eigenschaften in DB speichern
-    try {
-      const db = getDb()
-      db.prepare(`INSERT INTO geocode_cache (address, lat, lng, display_name, name, score, scoring_properties) VALUES (?, ?, ?, ?, ?, ?, ?)`)
-        .run(
-          address,
-          lat,
-          lng,
-          address, // display_name
-          address, // name
-          qualityScore.overall,
-          JSON.stringify(qualityScore)
-        )
-    } catch (dbErr) {
-      // Fehler beim Schreiben in die DB ignorieren, damit API trotzdem antwortet
-      console.error('DB insert error (quality-score):', dbErr)
-    }
+    // // Score und Eigenschaften in DB speichern
+    // try {
+    //   const db = getDb()
+    //   db.prepare(`INSERT INTO geocode_cache (address, lat, lng, display_name, name, score, scoring_properties) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+    //     .run(
+    //       address,
+    //       lat,
+    //       lng,
+    //       address, // display_name
+    //       address, // name
+    //       qualityScore.overall,
+    //       JSON.stringify(qualityScore)
+    //     )
+    // } catch (dbErr) {
+    //   // Fehler beim Schreiben in die DB ignorieren, damit API trotzdem antwortet
+    //   console.error('DB insert error (quality-score):', dbErr)
+    // }
 
     return NextResponse.json(qualityScore)
   } catch (error) {
