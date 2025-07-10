@@ -2,6 +2,8 @@
 
 An interactive Next.js application for evaluating quality of life based on addresses.
 
+![App mockup](public/mockup.png)
+
 ## Features
 
 - **Address Input**: Enter any address
