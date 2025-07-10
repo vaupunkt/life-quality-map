@@ -10,6 +10,7 @@ import handleAddressSearch from '../utils/handleAddressSearch'
 import { ActiveCategories, CategoryGroup, QualityScore, RadiusSettings, WeightOption } from '../utils/types'
 import generateShareImage from '@/utils/generateShareImage'
 import { categoryVisibility, getCategoryColor, getScoreColor, getScoreTextColor, getTotalVisibleMarkers, getWeightLabel, recalculateScoreLocally, toggleCategoryVisibility, toggleGroupVisibility, updateCategoryWeight, updateGroupWeight, weightingPresets, weightOptions } from './helper/helperFunctions'
+import { useTopPlaces } from './helper/useTopPlaces'
 
 // Dynamically import the Map component to avoid SSR issues
 const Map = dynamic(() => import('@/components/MapWrapper'), {
@@ -45,7 +46,8 @@ function HomeContent() {
   const [showSettings, setShowSettings] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
-  
+  const fullPageLoading = loading || mapLoading || recalculatingScore || qualityScore === null || coordinates === null;
+
   // Mobile Detection
   const [isMobile, setIsMobile] = useState(false)
   
@@ -150,6 +152,11 @@ function HomeContent() {
     alltag: false
   })
 
+  // Top 10 Places
+  const [topPlacesRefreshKey, setTopPlacesRefreshKey] = useState(0)
+  const topPlaces = useTopPlaces(topPlacesRefreshKey)
+  const [showTopList, setShowTopList] = useState(false)
+
 
 
   // Update quality score when radius changes
@@ -207,10 +214,8 @@ function HomeContent() {
 
   const calculateQualityScore = useCallback(async (lat: number, lng: number, addressName: string) => {
     setMapLoading(true)
-    
     try {
       const currentRadius = radiusSettings[radiusSettings.activeRadius]
-      
       const scoreResponse = await fetch('/api/quality-score', {
         method: 'POST',
         headers: {
@@ -225,25 +230,23 @@ function HomeContent() {
           categoryVisibility: categoryVisibility
         })
       })
-
       const scoreData = await scoreResponse.json()
-      
       if (scoreData.error) {
         setError(scoreData.error)
         return
       }
-
       setQualityScore(scoreData)
-      
       if (addressName && coordinates) {
         updateURL(addressName, coordinates)
         console.log('URL updated after quality score calculation:', addressName)
       }
+      // Top10-Liste nach erfolgreichem Score-API-Call aktualisieren
+      setTopPlacesRefreshKey(k => k + 1)
     } finally {
       setMapLoading(false)
       setRecalculatingScore(false)
     }
-  }, [radiusSettings, categoryGroups, categoryVisibility]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [radiusSettings, categoryGroups, categoryVisibility, coordinates]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddressSubmit = async (e:  React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -436,7 +439,7 @@ function HomeContent() {
       document.title = '✓ URL kopiert!'
       setTimeout(() => {
         document.title = originalTitle
-      }, 2000)
+      }, 1000)
     } catch (error) {
       console.error('Fehler beim Kopieren der URL:', error)
       const textArea = document.createElement('textarea')
@@ -557,6 +560,51 @@ function HomeContent() {
         ? 'bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900' 
         : 'bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50'
     }`}>
+      {/* Top 10 Liste */}
+      <div className="container mx-auto max-w-2xl p-6">
+        <button
+          className={`w-full flex items-center justify-between px-6 py-4 rounded-xl border shadow-lg font-bold text-lg transition-all duration-200 ${
+            darkMode ? 'bg-slate-800 border-slate-600 text-emerald-300' : 'bg-white border-emerald-200 text-emerald-700'
+          }`}
+          onClick={() => setShowTopList(v => !v)}
+        >
+          <span>🏆 Top 10 bestbewertete Orte (30 Tage)</span>
+          <span>{showTopList ? '▲' : '▼'}</span>
+        </button>
+        {showTopList && (
+          <div className={`mt-2 rounded-xl border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-emerald-50 border-emerald-100'} shadow-inner`}> 
+            <ol className="divide-y divide-emerald-200">
+              {topPlaces.length === 0 && (
+                <li className="p-4 text-center text-gray-400">Keine Daten vorhanden</li>
+              )}
+              {topPlaces.map((place, i) => (
+                <li key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 hover:bg-emerald-100/40 transition">
+                  <div>
+                    <span className="font-bold mr-2">{i+1}.</span>
+                    <span className="font-medium">{place.city}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-emerald-400 to-blue-400 text-white font-bold text-sm">{place.score}/10</span>
+                    <a href={`/?lat=${place.lat}&lng=${place.lng}`} className="text-emerald-600 underline text-xs" title="Zur Karte">Karte</a>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </div>
+
+      {/* Full-page loading overlay */}
+      {fullPageLoading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
+                    <div className="text-center text-white">
+                        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-emerald-400 mx-auto mb-4"></div>
+                        <p className="text-xl font-semibold">Lebensqualitäts-Karte wird geladen...</p>
+                        <p className="text-md text-gray-300 mt-2">Bitte warten Sie, bis alle Daten geladen sind.</p>
+                    </div>
+                </div>
+            )}
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         <div className="text-center mb-8 lg:mb-12">
           <div className="flex justify-center items-center gap-4 mb-4">
@@ -1456,8 +1504,25 @@ function HomeContent() {
                 />
               </div>
             </div>
+
           )}
+
         </div>
+        <div className={`text-center text-xs mt-8 ${
+          darkMode ? 'text-gray-400' : 'text-gray-500'
+        }`}>
+        <p>
+          Made with ❤️ in{' '}
+          <a
+            href={`${window.location.origin}/?lat=54.095791&lng=13.3815238`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Greifswald
+          </a>
+        </p>
+        </div>
+
       </div>
       
       <SettingsModal
