@@ -1,10 +1,10 @@
 import { QualityScore } from "./types"
 
-// Share-Funktionalität - Instagram Story Format (optimiert für bessere Lesbarkeit)
+// Share-Image Generator
 const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore, radius: number, baseUrl: string) => {
   if (!qualityScore || !radius) return
   
-  // Helper function zum Laden von OSM-Kacheln
+  // Helper function to load map tiles
   const loadMapTile = async (lat: number, lng: number, zoom: number): Promise<HTMLImageElement | null> => {
     try {
       const tileX = Math.floor((lng + 180) / 360 * Math.pow(2, zoom))
@@ -61,7 +61,7 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
   }
   ctx.globalAlpha = 1
   
-  // Layout-Konstanten für bessere Struktur
+  // Layout-Variables 
   const PADDING = 40
   const SECTION_SPACING = 60
   const ITEM_HEIGHT = 70
@@ -80,12 +80,12 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
   ctx.fillText('Lebensqualitäts-Analyse', canvas.width / 2, currentY)
   currentY += SECTION_SPACING
   
-  // Address (mit besserer Längen-Behandlung)
+  // Address
   let displayAddress = qualityScore.address
   ctx.font = 'bold 38px system-ui'
   const addressMetrics = ctx.measureText(displayAddress)
   if (addressMetrics.width > CONTAINER_WIDTH - 40) {
-    // Intelligentere Kürzung
+    // Truncate address if too long
     const words = displayAddress.split(' ')
     let shortAddress = ''
     for (const word of words) {
@@ -103,7 +103,7 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
   ctx.fillText(displayAddress, canvas.width / 2, currentY)
   currentY += SECTION_SPACING
   
-  // Score Circle (größer und prominenter)
+  // Score Circle
   const scoreCenterX = canvas.width / 2
   const scoreCenterY = currentY + 80
   const scoreRadius = 100
@@ -147,7 +147,7 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
   
   currentY = scoreCenterY + scoreRadius + SECTION_SPACING
   
-  // Kategorien sortieren
+  // Sort categories by score
   const allCategories = [
     { label: 'Kindergärten', emoji: '👶', score: qualityScore.kindergarten },
     { label: 'Schulen', emoji: '🏫', score: qualityScore.schools },
@@ -166,7 +166,7 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
   const topCategories = allCategories.slice(0, 3)
   const bottomCategories = allCategories.slice(-3).reverse()
   
-  // Helper function für bessere Item-Darstellung
+  // Helper function
   const drawCategoryItem = (category: typeof topCategories[0], x: number, y: number, width: number, isTop: boolean) => {
     const itemBg = isTop 
       ? (darkMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)')
@@ -228,12 +228,12 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
   
   currentY += SECTION_SPACING
   
-  // Map und Call-to-Action Section (nebeneinander) - Größere Karte
-  const mapSize = 480  // Vergrößert von 240 auf 480
+  // Map and Call-to-Action Section
+  const mapSize = 480 
   const mapX = PADDING + 20
   const mapY = currentY
   
-  // Map laden und zeichnen
+  // load Map Tile
   const mapTile = await loadMapTile(qualityScore.lat, qualityScore.lng, 13)
   
   if (mapTile) {
@@ -292,23 +292,23 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
   ctx.fillText('📍', centerX, centerY + 6)
   ctx.restore()
   
-  // Radius-Text unter der Karte
+  // Radius-Text 
   const radiusText = `Werte für einen Umkreis von ${radius} Metern`
   ctx.fillStyle = darkMode ? '#94a3b8' : '#64748b'
   ctx.font = '22px system-ui'
   ctx.textAlign = 'center'
   ctx.fillText(radiusText, mapX + mapSize / 2, mapY + mapSize + 30)
   
-  // Call-to-Action rechts neben der Karte (angepasst für größere Karte)
-  const ctaX = mapX + mapSize + 30  // Weniger Abstand wegen größerer Karte
+  // Call-to-Action
+  const ctaX = mapX + mapSize + 30
   const ctaY = mapY + 40
-  const ctaWidth = CONTAINER_WIDTH - mapSize - 70  // Angepasste Breite
+  const ctaWidth = CONTAINER_WIDTH - mapSize - 70
   
   ctx.fillStyle = '#10b981'
-  ctx.font = 'bold 32px system-ui'  // Etwas kleinere Schrift
+  ctx.font = 'bold 32px system-ui'
   ctx.textAlign = 'left'
   
-  // Mehrzeiliger Text mit korrekter Umbruch-Logik
+  // Call-to-Action Text
   const ctaLines = [
     'Entdecke die Lebensqualität',
     'auch in deiner Stadt!',
@@ -327,9 +327,9 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
     ctx.fillText(line, ctaX, ctaY + (index * 40))
   })
   
-  // QR-Code Platzhalter oder zusätzliche Info
+  // additional space for the link
   ctx.fillStyle = darkMode ? '#64748b' : '#94a3b8'
-  ctx.font = 'bold 22px system-ui'  // Etwas kleinere Schrift
+  ctx.font = 'bold 22px system-ui'  
   const linkLines = [
     'Probiers aus:',
     baseUrl]
@@ -337,7 +337,7 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
     ctx.fillText(line, ctaX, ctaY + 350 + (index * 30))
   })
   
-  // Footer (angepasste Position wegen größerer Karte)
+  // Footer
   const footerY = Math.max(mapY + mapSize + 80, canvas.height - 60)
   ctx.fillStyle = darkMode ? '#64748b' : '#94a3b8'
   ctx.font = '24px system-ui'
@@ -347,7 +347,7 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
   return canvas.toDataURL('image/png')
 }
 
-// Helper function für abgerundete Rechtecke
+// Helper function
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   ctx.beginPath()
   ctx.moveTo(x + radius, y)

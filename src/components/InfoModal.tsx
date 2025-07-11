@@ -27,7 +27,7 @@ export default function InfoModal({ isOpen, onClose, darkMode }: InfoModalProps)
 
   if (!isOpen) return null
 
-  // Handler für Klick außerhalb des Modals
+  // Handler for backdrop click to close modal
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose()

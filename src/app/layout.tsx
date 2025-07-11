@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     title: 'Lebensqualitäts-Karte - Entdecke die Lebensqualität in deiner Stadt',
     description: '🍀 Interaktive Karte zur Bewertung der Lebensqualität basierend auf Bildung, Gesundheit, Freizeit und Infrastruktur.',
     images: ['/og_screenshot.jpg'],
-    creator: '@lebensqualitaet_karte',
+    creator: '@vaupunkt',
   },
   robots: {
     index: true,
@@ -50,9 +50,6 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
-  },
-  verification: {
-    google: 'your-google-verification-code', // später hinzufügen
   },
   icons: {
     icon: [
