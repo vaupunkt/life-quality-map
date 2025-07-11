@@ -377,9 +377,9 @@ function HomeContent() {
 
   const handleShare = async () => {
     if (!qualityScore) return
-    
+    const baseUrl = currentUrl.split('?')[0].replace("https://", "") // Get base URL without query parameters
     try {
-      const imageDataUrl = await generateShareImage(darkMode, qualityScore)
+      const imageDataUrl = await generateShareImage(darkMode, qualityScore, radiusSettings[radiusSettings.activeRadius], baseUrl)
       if (!imageDataUrl) return
       
       // Convert Data URL zu Blob
