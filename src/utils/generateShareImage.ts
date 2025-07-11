@@ -310,15 +310,14 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
   
   // Call-to-Action Text
   const ctaLines = [
+    qualityScore.overall === 10 ? 'Hammer! Klingt perfekt 🤩' :
+    qualityScore.overall >= 8 ? 'Das ist schon fast perfekt! 🥳' :
+    qualityScore.overall > 5 ? 'Scheint hier ganz ok zu sein. 👍' :
+    qualityScore.overall > 3 ? 'Könnte noch besser sein! 😬' : 
+    'Du hast bestimmt Gründe', qualityScore.overall < 3 ? 'hier zu wohnen ... 🙃' : '',
+    '',
     'Entdecke die Lebensqualität',
     'auch in deiner Stadt!',
-    '',
-    qualityScore.overall === 10 ? 'Hammer! Klingt perfekt' :
-    qualityScore.overall >= 8 ? 'Das ist schon fast perfekt' :
-    qualityScore.overall > 5 ? 'Scheint ganz ok zu sein' :
-    qualityScore.overall > 3 ? 'Könnte noch besser sein!' : 
-    'Du hast bestimmt Gründe', qualityScore.overall < 3 ? 'hier zu wohnen.' : '',
-    '',
     'Vielleicht ist es woanders',
     'noch schöner?'
   ]
