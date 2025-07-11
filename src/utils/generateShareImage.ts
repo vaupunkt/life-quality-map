@@ -313,11 +313,11 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
     'Entdecke die Lebensqualität',
     'auch in deiner Stadt!',
     '',
-    qualityScore.overall === 10 ? 'Hammer! Das ist ja perfekt!' :
-    qualityScore.overall >= 8 ? 'Das ist schon fast perfekt!' :
-    qualityScore.overall > 5 ? 'Das ist schon ok!' :
+    qualityScore.overall === 10 ? 'Hammer! Klingt perfekt' :
+    qualityScore.overall >= 8 ? 'Das ist schon fast perfekt' :
+    qualityScore.overall > 5 ? 'Scheint ganz ok zu sein' :
     qualityScore.overall > 3 ? 'Könnte noch besser sein!' : 
-    'Du hast bestimmt Gründe', 'hier zu wohnen.',
+    'Du hast bestimmt Gründe', qualityScore.overall < 3 ? 'hier zu wohnen.' : '',
     '',
     'Vielleicht ist es woanders',
     'noch schöner?'
