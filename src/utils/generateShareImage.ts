@@ -229,68 +229,102 @@ const generateShareImage = async (darkMode: boolean, qualityScore: QualityScore,
   currentY += SECTION_SPACING
   
   // Map and Call-to-Action Section
-  const mapSize = 480 
-  const mapX = PADDING + 20
-  const mapY = currentY
-  
-  // load Map Tile
-  const mapTile = await loadMapTile(qualityScore.lat, qualityScore.lng, 13)
-  
-  if (mapTile) {
-    ctx.save()
-    roundRect(ctx, mapX, mapY, mapSize, mapSize, 16)
-    ctx.clip()
-    ctx.drawImage(mapTile, mapX, mapY, mapSize, mapSize)
-    ctx.restore()
-    
-    ctx.strokeStyle = darkMode ? '#94a3b8' : '#64748b'
-    ctx.lineWidth = 4
-    roundRect(ctx, mapX, mapY, mapSize, mapSize, 16)
-    ctx.stroke()
-  } else {
-    // Fallback map
-    ctx.fillStyle = darkMode ? '#374151' : '#e5e7eb'
-    roundRect(ctx, mapX, mapY, mapSize, mapSize, 16)
-    ctx.fill()
-    
-    ctx.strokeStyle = darkMode ? '#6b7280' : '#9ca3af'
-    ctx.lineWidth = 3
-    for (let i = 1; i < 4; i++) {
-      const roadY = mapY + (i * mapSize / 4)
-      ctx.beginPath()
-      ctx.moveTo(mapX + 20, roadY)
-      ctx.lineTo(mapX + mapSize - 20, roadY)
-      ctx.stroke()
-      
-      const roadX = mapX + (i * mapSize / 4)
-      ctx.beginPath()
-      ctx.moveTo(roadX, mapY + 20)
-      ctx.lineTo(roadX, mapY + mapSize - 20)
-      ctx.stroke()
-    }
+
+  const mapSize = 480;
+  const mapX = PADDING + 20;
+  const mapY = currentY;
+  const zoom = 13;
+  const TILE_SIZE = 256;
+
+  // Helper: get world pixel coordinates for lat/lng
+  function getWorldPixel(lat: number, lng: number, zoom: number) {
+    const sinLat = Math.sin(lat * Math.PI / 180);
+    const x = ((lng + 180) / 360) * Math.pow(2, zoom) * TILE_SIZE;
+    const y = (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * Math.pow(2, zoom) * TILE_SIZE;
+    return { x, y };
   }
-  
+
+  // Center of map in world pixel coordinates
+  const centerWorld = getWorldPixel(qualityScore.lat, qualityScore.lng, zoom);
+
+  // How many tiles do we need to cover mapSize?
+  const tilesNeeded = Math.ceil(mapSize / TILE_SIZE) + 1; // +1 for overlap
+  const halfMapPx = mapSize / 2;
+
+  // Top-left world pixel of the map area
+  const topLeftWorldX = centerWorld.x - halfMapPx;
+  const topLeftWorldY = centerWorld.y - halfMapPx;
+
+  // Which tile is top-left?
+  const startTileX = Math.floor(topLeftWorldX / TILE_SIZE);
+  const startTileY = Math.floor(topLeftWorldY / TILE_SIZE);
+
+  // Offset in px from top-left tile to map area
+  const offsetX = topLeftWorldX - startTileX * TILE_SIZE;
+  const offsetY = topLeftWorldY - startTileY * TILE_SIZE;
+
+  // Load all needed tiles
+  async function loadTiles(tileXStart: number, tileYStart: number, tiles: number, zoom: number) {
+    const images: Array<{img: HTMLImageElement|null, x: number, y: number}> = [];
+    for (let dx = 0; dx < tiles; dx++) {
+      for (let dy = 0; dy < tiles; dy++) {
+        const tileX = tileXStart + dx;
+        const tileY = tileYStart + dy;
+        const img = await loadMapTile(
+          180 / Math.PI * Math.atan(Math.sinh(Math.PI * (1 - 2 * tileY / Math.pow(2, zoom)))),
+          tileX / Math.pow(2, zoom) * 360 - 180,
+          zoom
+        );
+        images.push({img, x: dx, y: dy});
+      }
+    }
+    return images;
+  }
+
+  let markerX = mapX + mapSize / 2;
+  let markerY = mapY + mapSize / 2;
+
+  // Draw map tiles
+  const tileImages = await loadTiles(startTileX, startTileY, tilesNeeded, zoom);
+  ctx.save();
+  roundRect(ctx, mapX, mapY, mapSize, mapSize, 16);
+  ctx.clip();
+  for (const {img, x, y} of tileImages) {
+    if (!img) continue;
+    // Position of this tile in map area
+    const drawX = mapX + x * TILE_SIZE - offsetX;
+    const drawY = mapY + y * TILE_SIZE - offsetY;
+    ctx.drawImage(img, drawX, drawY, TILE_SIZE, TILE_SIZE);
+  }
+  ctx.restore();
+
+  ctx.strokeStyle = darkMode ? '#94a3b8' : '#64748b';
+  ctx.lineWidth = 4;
+  roundRect(ctx, mapX, mapY, mapSize, mapSize, 16);
+  ctx.stroke();
+
+  // Marker always in center of map
+  markerX = mapX + mapSize / 2;
+  markerY = mapY + mapSize / 2;
+
   // Location marker
-  const centerX = mapX + mapSize / 2
-  const centerY = mapY + mapSize / 2
-  
-  ctx.save()
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
-  ctx.shadowBlur = 8
-  ctx.fillStyle = '#ef4444'
-  ctx.strokeStyle = '#ffffff'
-  ctx.lineWidth = 3
-  ctx.beginPath()
-  ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI)
-  ctx.fill()
-  ctx.stroke()
-  
-  ctx.shadowColor = 'transparent'
-  ctx.fillStyle = '#ffffff'
-  ctx.font = 'bold 20px system-ui'
-  ctx.textAlign = 'center'
-  ctx.fillText('📍', centerX, centerY + 6)
-  ctx.restore()
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = '#ef4444';
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(markerX, markerY, 20, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.shadowColor = 'transparent';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 20px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('📍', markerX, markerY + 6);
+  ctx.restore();
   
   // Radius-Text 
   const radiusText = `Werte für einen Umkreis von ${radius} Metern`
